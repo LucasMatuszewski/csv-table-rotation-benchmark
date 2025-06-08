@@ -5,7 +5,7 @@ use rotate_cli::{rotate_right, square_len};
 use serde_json::Value;
 use std::{fs::File, io, process};
 
-/// Rotate square tables inside a CSV file 90° clockwise.
+/// Rotate square tables inside a CSV file shifting each element one position clockwise around its ring.
 #[derive(Parser)]
 #[command(name = "rotate_cli")]
 #[command(about = "A CLI tool to rotate square numerical tables in CSV files")]
@@ -144,7 +144,7 @@ mod tests {
     fn test_process_valid_3x3() {
         // Original:           After 1-step clockwise:
         // [1, 2, 3]       →   [4, 1, 2]
-        // [4, 5, 6]           [7, 5, 3] 
+        // [4, 5, 6]           [7, 5, 3]
         // [7, 8, 9]           [8, 9, 6]
         // Ring: 1→2→3→6→9→8→7→4 becomes 4→1→2→3→6→9→8→7, center 5 unchanged
         // Expected JSON: "[4,1,2,7,5,3,8,9,6]"
