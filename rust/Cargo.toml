@@ -21,3 +21,7 @@ assert_cmd = "2.0"
 proptest = "1.4"
 insta = { version = "1.34", features = ["glob"] }
 criterion = "0.5"
+
+[[bench]]
+name = "rotation_bench"
+harness = false

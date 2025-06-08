@@ -1,7 +1,7 @@
 //! Library crate for table rotation logic.
 //!
 //! This crate provides functions to validate and rotate square numerical tables
-//! represented as flat arrays. Tables are rotated 90° clockwise (right rotation).
+//! represented as flat arrays. Tables are rotated by shifting each element one position clockwise around its ring.
 
 use std::error::Error;
 use std::fmt;
