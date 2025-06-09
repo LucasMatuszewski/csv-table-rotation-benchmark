@@ -1,7 +1,7 @@
 # Table Rotation CLI - Polyglot Implementation
 
-[![CI](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/ci.yml)
-[![Benchmarks](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/bench.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/bench.yml)
+[![CI](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/ci.yml)
+[![Benchmarks](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/bench.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/bench.yml)
 
 A high-performance CSV table rotation tool implemented in Rust, TypeScript, and Python to demonstrate cross-language performance characteristics and coding practices.
 
@@ -177,8 +177,8 @@ For each ring independently, every element moves **one position clockwise**:
 
 ```bash
 # Clone and navigate
-git clone git@github.com:LucasMatuszewski/csv-table-rotation-cli.git
-cd csv-table-rotation-cli
+git clone git@github.com:LucasMatuszewski/csv-table-rotation-benchmark.git
+cd csv-table-rotation-benchmark
 
 # Run any implementation
 ./rust/target/release/rotate_cli input-samples/sample-1k.csv > output.csv
@@ -189,7 +189,7 @@ python -m rotate_cli input-samples/sample-1k.csv > output.csv
 ## Repository Structure
 
 ```
-csv-table-rotation-cli/
+csv-table-rotation-benchmark/
 ├── input-samples/
 │   └── sample-1k.csv          # Shared test fixtures
 ├── benchmarks/
