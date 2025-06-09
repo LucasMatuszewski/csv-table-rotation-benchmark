@@ -159,7 +159,8 @@ benchmark_data_size_scaling() {
         --max-runs ${MAX_RUNS} \
         --export-markdown "${RESULTS_DIR}/scaling_small_${timestamp}.md" \
         --command-name "Rust (small)" "${RUST_BINARY} ${test_data_dir}/small.csv" \
-        --command-name "TypeScript (small)" "${TS_BINARY} ${test_data_dir}/small.csv"
+        --command-name "TypeScript (small)" "${TS_BINARY} ${test_data_dir}/small.csv" \
+        --command-name "Python (small)" "${PYTHON_BINARY} ${test_data_dir}/small.csv"
     
     log_info "Benchmarking with medium dataset..."
     hyperfine \
@@ -169,7 +170,8 @@ benchmark_data_size_scaling() {
         --max-runs ${MAX_RUNS} \
         --export-markdown "${RESULTS_DIR}/scaling_medium_${timestamp}.md" \
         --command-name "Rust (medium)" "${RUST_BINARY} ${test_data_dir}/medium.csv" \
-        --command-name "TypeScript (medium)" "${TS_BINARY} ${test_data_dir}/medium.csv"
+        --command-name "TypeScript (medium)" "${TS_BINARY} ${test_data_dir}/medium.csv" \
+        --command-name "Python (medium)" "${PYTHON_BINARY} ${test_data_dir}/medium.csv"
     
     log_info "Benchmarking with large dataset..."
     hyperfine \
@@ -179,7 +181,8 @@ benchmark_data_size_scaling() {
         --max-runs ${MAX_RUNS} \
         --export-markdown "${RESULTS_DIR}/scaling_large_${timestamp}.md" \
         --command-name "Rust (large)" "${RUST_BINARY} ${test_data_dir}/large.csv" \
-        --command-name "TypeScript (large)" "${TS_BINARY} ${test_data_dir}/large.csv"
+        --command-name "TypeScript (large)" "${TS_BINARY} ${test_data_dir}/large.csv" \
+        --command-name "Python (large)" "${PYTHON_BINARY} ${test_data_dir}/large.csv"
     
     log_success "Data size scaling benchmarks completed"
 }
@@ -198,7 +201,8 @@ benchmark_startup_overhead() {
         --max-runs 25 \
         --export-markdown "${RESULTS_DIR}/startup_overhead_${timestamp}.md" \
         --command-name "Rust startup" "${RUST_BINARY} ${test_data_dir}/small.csv" \
-        --command-name "TypeScript startup" "${TS_BINARY} ${test_data_dir}/small.csv"
+        --command-name "TypeScript startup" "${TS_BINARY} ${test_data_dir}/small.csv" \
+        --command-name "Python startup" "${PYTHON_BINARY} ${test_data_dir}/small.csv"
     
     log_success "Startup overhead benchmarks completed"
 }

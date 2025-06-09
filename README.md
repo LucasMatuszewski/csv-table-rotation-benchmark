@@ -362,23 +362,34 @@ pip install -e ".[dev]"
 ```
 | Dataset | Rust Time | Python Time | TypeScript Time | Rust vs Python | Rust vs TypeScript |
 |---------|-----------|-------------|-----------------|-----------------|-------------------|
-| Small   | 1.6ms     | N/A         | 29.6ms         | N/A             | 19.0× faster      |
-| Medium  | 1.5ms     | 17.5ms      | 31.8ms         | 11.8× faster    | 21.4× faster      |
-| Large   | 3.0ms     | 36.2ms      | 40.2ms         | 11.9× faster    | 13.3× faster      |
+| Small   | 1.4ms     | 16.8ms      | 29.0ms         | 12.0× faster    | 20.7× faster      |
+| Medium  | 1.5ms     | 17.4ms      | 31.3ms         | 11.6× faster    | 20.9× faster      |
+| Large   | 3.0ms     | 35.8ms      | 39.5ms         | 11.9× faster    | 13.2× faster      |
+```
+
+**Startup Overhead Analysis:**
+
+```
+| Language   | Startup Time | vs Rust |
+|------------|--------------|---------|
+| Rust       | 1.4ms        | 1.00×   |
+| Python     | 16.6ms       | 11.9×   |
+| TypeScript | 29.0ms       | 20.7×   |
 ```
 
 **Performance Ranking:**
 
-1. **Rust** (1.5-3.0ms) - Fastest with excellent scaling; compiled efficiency and zero-cost abstractions
-2. **Python** (17.5-36.2ms) - ~12× slower; consistent performance, efficient built-in modules
-3. **TypeScript/Node.js** (29.6-40.2ms) - ~13-21× slower; V8 JIT performance limited by startup overhead
+1. **Rust** (1.4-3.0ms) - Fastest with excellent scaling; compiled efficiency and zero-cost abstractions
+2. **Python** (16.8-35.8ms) - ~12× slower; consistent performance, efficient built-in modules
+3. **TypeScript/Node.js** (29.0-39.5ms) - ~13-21× slower; V8 JIT performance limited by startup overhead
 
 **Key Performance Insights:**
 
-- **Perfect algorithmic scaling**: Rust demonstrates O(N²) scaling (1.5ms → 3.0ms for 25× larger matrices)
-- **Startup overhead impact**: TypeScript shows more startup penalty (21× slower → 13× slower as dataset grows)
-- **Python consistency**: Maintains steady ~12× performance gap across all dataset sizes
-- **Runtime characteristics**: Node.js startup dominates small workloads; Python's interpreter overhead is more predictable
+- **Perfect algorithmic scaling**: Rust demonstrates O(N²) scaling (1.4ms → 3.0ms for ~25× larger matrices)
+- **Startup overhead dominance**: Both Python (~16.6ms) and TypeScript (~29ms) have significant startup costs compared to Rust (~1.4ms)
+- **Python consistency**: Maintains steady ~12× performance gap across all dataset sizes, with startup being the primary bottleneck
+- **TypeScript scaling**: Shows diminishing startup penalty as datasets grow (21× slower → 13× slower), but startup overhead remains substantial
+- **Runtime characteristics**: For small workloads, startup overhead dominates; Python's interpreter is more efficient than Node.js V8 initialization
 - **Cross-language consistency**: All implementations use identical algorithm ensuring performance comparison reflects language/runtime differences, not algorithmic ones
 
 ## Testing
