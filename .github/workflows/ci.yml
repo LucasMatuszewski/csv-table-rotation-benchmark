@@ -63,6 +63,69 @@ jobs:
           head -1 /tmp/rust-output.csv | grep -q "id,json,is_valid"
           wc -l < /tmp/rust-output.csv
 
+  go:
+    name: Go CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: go/go.sum
+
+      - name: Cache Go dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        working-directory: go
+
+      - name: Check formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "Go code is not formatted properly:"
+            gofmt -s -l .
+            exit 1
+          fi
+        working-directory: go
+
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
+        working-directory: go
+
+      - name: Build debug
+        run: go build -v ./...
+        working-directory: go
+
+      - name: Run tests
+        run: go test -v ./...
+        working-directory: go
+
+      - name: Build release binary
+        run: go build -o ./bin/rotate ./cmd/rotate
+        working-directory: go
+
+      - name: Test CLI with sample data
+        run: ./bin/rotate ../input-samples/sample-1k.csv > /tmp/go-output.csv
+        working-directory: go
+
+      - name: Verify output format
+        run: |
+          head -1 /tmp/go-output.csv | grep -q "id,json,is_valid"
+          wc -l < /tmp/go-output.csv
+
   typescript:
     name: TypeScript CI
     runs-on: ubuntu-latest
@@ -152,7 +215,7 @@ jobs:
   integration:
     name: Cross-Implementation Validation
     runs-on: ubuntu-latest
-    needs: [rust, typescript, python]
+    needs: [rust, go, typescript, python]
 
     steps:
       - uses: actions/checkout@v4
@@ -160,6 +223,12 @@ jobs:
       # Setup all environments
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: go/go.sum
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -178,6 +247,10 @@ jobs:
         run: cargo build --release
         working-directory: rust
 
+      - name: Build Go
+        run: go build -o ./bin/rotate ./cmd/rotate
+        working-directory: go
+
       - name: Build TypeScript
         run: |
           npm ci
@@ -194,11 +267,18 @@ jobs:
       - name: Generate outputs from all implementations
         run: |
           ./rust/target/release/rotate_cli input-samples/sample-1k.csv > rust-output.csv
+          ./go/bin/rotate input-samples/sample-1k.csv > go-output.csv
           node typescript/dist/index.js input-samples/sample-1k.csv > ts-output.csv
           python -m rotate_cli input-samples/sample-1k.csv > python-output.csv
 
       - name: Compare outputs (should be identical)
         run: |
+          # Compare Rust vs Go
+          if ! diff rust-output.csv go-output.csv; then
+            echo "❌ Rust and Go outputs differ!"
+            exit 1
+          fi
+
           # Compare Rust vs TypeScript
           if ! diff rust-output.csv ts-output.csv; then
             echo "❌ Rust and TypeScript outputs differ!"
@@ -219,5 +299,6 @@ jobs:
           name: implementation-outputs
           path: |
             rust-output.csv
+            go-output.csv
             ts-output.csv
             python-output.csv
