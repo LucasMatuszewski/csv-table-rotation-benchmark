@@ -179,8 +179,8 @@ cd csv-table-rotation-cli
 
 # Run any implementation
 ./rust/target/release/rotate_cli input-samples/sample-1k.csv > output.csv
-node typescript/dist/cli.js input-samples/sample-1k.csv > output.csv
-python -m python.rotate_cli input-samples/sample-1k.csv > output.csv
+node typescript/dist/index.js input-samples/sample-1k.csv > output.csv
+python -m rotate_cli input-samples/sample-1k.csv > output.csv
 ```
 
 ## Repository Structure
@@ -216,7 +216,7 @@ csv-table-rotation-cli/
 ```bash
 cd rust
 cargo build --release
-./target/release/rotate_cli ../input-samples/sample-1k.csv
+./target/release/rotate_cli ../input-samples/sample-1k.csv > output-rust.csv
 ```
 
 **Test:**
@@ -241,7 +241,7 @@ cargo bench  # Performance benchmarks
 cd typescript
 pnpm install
 pnpm build
-node dist/cli.js ../input-samples/sample-1k.csv
+node dist/cli.js ../input-samples/sample-1k.csv > output-typescript.csv
 ```
 
 **Test:**
@@ -264,23 +264,34 @@ pnpm lint
 
 ```bash
 cd python
-pip install -e .
-python -m rotate_cli ../input-samples/sample-1k.csv
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install package with dependencies
+pip install -e ".[dev]"
+
+# Run the CLI
+python -m rotate_cli ../input-samples/sample-1k.csv > output-python.csv
 ```
 
 **Test:**
 
 ```bash
-pytest
-mypy src/  # Type checking
+# Activate virtual environment first
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+pytest tests/ -v
+mypy rotate_cli/  # Type checking
 ```
 
 **Features:**
 
-- Type hints throughout
+- Type hints throughout with strict mypy configuration
 - Built-in CSV module for streaming
 - pytest with benchmark plugin
-- PEP 621 compliant project structure
+- PEP 621 compliant project structure (no requirements.txt needed)
+- Virtual environment support for dependency isolation
 
 ## Performance Benchmarks
 
@@ -322,6 +333,15 @@ Full program comparison across implementations using [hyperfine](https://github.
 ./benchmarks/quick_test.sh
 ```
 
+**Note**: Python benchmarks require a virtual environment setup in `python/venv/`. The benchmark scripts will automatically create and install dependencies if needed, or you can set it up manually:
+
+```bash
+cd python
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -e ".[dev]"
+```
+
 **Benchmark Features:**
 
 - **Basic performance** - Direct comparison on standard workloads
@@ -340,24 +360,26 @@ Full program comparison across implementations using [hyperfine](https://github.
 **Sample Results (Data Size Scaling):**
 
 ```
-| Dataset | Rust Time | TypeScript Time | Performance Gap |
-|---------|-----------|-----------------|-----------------|
-| Small   | 1.7ms     | 29.7ms         | 17.9× faster    |
-| Medium  | 1.5ms     | 31.9ms         | 20.9× faster    |
-| Large   | 3.0ms     | 40.4ms         | 13.3× faster    |
+| Dataset | Rust Time | Python Time | TypeScript Time | Rust vs Python | Rust vs TypeScript |
+|---------|-----------|-------------|-----------------|-----------------|-------------------|
+| Small   | 1.6ms     | N/A         | 29.6ms         | N/A             | 19.0× faster      |
+| Medium  | 1.5ms     | 17.5ms      | 31.8ms         | 11.8× faster    | 21.4× faster      |
+| Large   | 3.0ms     | 36.2ms      | 40.2ms         | 11.9× faster    | 13.3× faster      |
 ```
 
 **Performance Ranking:**
 
-1. **Rust** (1.5-3.0ms) - Fastest with excellent scaling; compiled efficiency shows as workload increases
-2. **TypeScript/Node.js** (30-40ms) - 13-21× slower; startup overhead dominates small workloads
-3. **Python** - TBD (implementation pending)
+1. **Rust** (1.5-3.0ms) - Fastest with excellent scaling; compiled efficiency and zero-cost abstractions
+2. **Python** (17.5-36.2ms) - ~12× slower; consistent performance, efficient built-in modules
+3. **TypeScript/Node.js** (29.6-40.2ms) - ~13-21× slower; V8 JIT performance limited by startup overhead
 
 **Key Performance Insights:**
 
-- **Algorithm scaling**: Rust demonstrates O(N²) scaling (1.5ms → 3.0ms for 25× larger matrices)
-- **Startup vs computation**: Performance gap narrows from 21× to 13× as matrix computation becomes more significant relative to Node.js startup overhead
-- **Large matrix handling**: 50×50 matrices (2500 elements) provide meaningful computational workload to showcase algorithmic performance differences
+- **Perfect algorithmic scaling**: Rust demonstrates O(N²) scaling (1.5ms → 3.0ms for 25× larger matrices)
+- **Startup overhead impact**: TypeScript shows more startup penalty (21× slower → 13× slower as dataset grows)
+- **Python consistency**: Maintains steady ~12× performance gap across all dataset sizes
+- **Runtime characteristics**: Node.js startup dominates small workloads; Python's interpreter overhead is more predictable
+- **Cross-language consistency**: All implementations use identical algorithm ensuring performance comparison reflects language/runtime differences, not algorithmic ones
 
 ## Testing
 
