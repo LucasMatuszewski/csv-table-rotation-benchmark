@@ -293,22 +293,63 @@ jobs:
             if (compFile) {
               const content = fs.readFileSync(path.join(resultsDir, compFile), 'utf8');
               
-              // Extract the results table from markdown
-              const tableMatch = content.match(/\| Command.*?\n(\|.*?\n)+/s);
-              const summaryMatch = content.match(/Summary\n(.*ran.*?\n)+/s);
+              // Extract the results table from hyperfine markdown output
+              const lines = content.split('\n');
               
+              // Find the table header line (starts with "| Command")
+              const headerIndex = lines.findIndex(line => line.trim().startsWith('| Command'));
+              
+              let tableLines = [];
+              if (headerIndex !== -1) {
+                // Get header line
+                tableLines.push(lines[headerIndex]);
+                
+                // Get separator line (next line after header)
+                if (headerIndex + 1 < lines.length) {
+                  tableLines.push(lines[headerIndex + 1]);
+                }
+                
+                // Get data rows (continue until we hit an empty line or non-table content)
+                for (let i = headerIndex + 2; i < lines.length; i++) {
+                  const line = lines[i].trim();
+                  if (line.startsWith('|') && line.endsWith('|')) {
+                    tableLines.push(lines[i]);
+                  } else if (line === '') {
+                    break; // Stop at empty line
+                  }
+                }
+              }
+              
+              // Extract summary section (look for "Summary" section)
+              const summaryIndex = lines.findIndex(line => line.trim() === 'Summary');
+              let summaryLines = [];
+              if (summaryIndex !== -1) {
+                for (let i = summaryIndex + 1; i < lines.length && lines[i].trim() !== ''; i++) {
+                  if (lines[i].trim()) {
+                    summaryLines.push(lines[i].trim());
+                  }
+                }
+              }
+              
+              // Build the comment
               let comment = `## 🚀 Performance Benchmark Results\n\n`;
               comment += `Commit: \`${{ github.sha }}\`\n\n`;
               
-              if (tableMatch) {
-                comment += `### Results\n\n${tableMatch[0]}\n`;
+              if (tableLines.length > 0) {
+                comment += `### Performance Comparison\n\n`;
+                comment += tableLines.join('\n') + '\n\n';
               }
               
-              if (summaryMatch) {
-                comment += `### Summary\n\n\`\`\`\n${summaryMatch[0]}\`\`\`\n`;
+              if (summaryLines.length > 0) {
+                comment += `### Summary\n\n`;
+                summaryLines.forEach(line => {
+                  comment += `- ${line}\n`;
+                });
+                comment += '\n';
               }
               
-              comment += `\n📊 [Full benchmark results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+              comment += `📊 **[View Full Benchmark Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**\n\n`;
+              comment += `> *Benchmarks run on: \`${{ runner.os }}\` • Generated: ${new Date().toISOString().split('T')[0]}*`;
               
               github.rest.issues.createComment({
                 issue_number: context.issue.number,

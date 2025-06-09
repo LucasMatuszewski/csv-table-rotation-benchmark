@@ -5,7 +5,7 @@
 
 ## 🚀 TL;DR - Performance Results & Motivation
 
-A high-performance CSV Table Rotation CLI tool implemented in **Rust, Go, TypeScript, and Python** using an identical [algorithm](#algorithm-explanation). Built as a showcase of modern cross-language development and performance benchmarking, it demonstrates each language's real-world strengths and trade-offs (see [full benchmarks](#performance-benchmarks)).
+A high-performance CSV Table Rotation CLI tool implemented in **Rust, Go, TypeScript, and Python** using an identical [algorithm](#algorithm-explanation). Built with **hyperfine** for cross-language performance benchmarking to demonstrate each language's real-world strengths and trade-offs (see [full benchmarks](#performance-benchmarks)).
 
 **Why this project?**
 Imagine coding in multiple languages at full productivity - with the flu - comfortably nestled in your bed, powered by **XR Glasses**, and assisted by the latest **Claude 4 Sonnet** inside cutting-edge AI tools (see [Zed vs Cursor comparison](#-ai-tools-comparison)). This unique scenario inspired the creation of this repository. What a time to be alive!
