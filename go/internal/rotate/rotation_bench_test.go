@@ -251,4 +251,4 @@ func BenchmarkScaling(b *testing.B) {
 			}
 		})
 	}
-} 
+}

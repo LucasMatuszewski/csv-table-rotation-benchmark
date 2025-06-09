@@ -260,5 +260,3 @@ func TestRotate10x10(t *testing.T) {
 		t.Errorf("Expected %v, got %v", expected, data)
 	}
 }
-
- 

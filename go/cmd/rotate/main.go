@@ -126,4 +126,4 @@ func processJSONArray(jsonStr string) (string, bool) {
 	}
 
 	return string(rotatedJSON), true
-} 
+}

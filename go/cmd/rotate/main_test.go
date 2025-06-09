@@ -169,4 +169,4 @@ func TestCLIErrorHandling(t *testing.T) {
 	if !strings.Contains(string(output), "Usage:") {
 		t.Errorf("Expected usage message, got: %s", output)
 	}
-} 
+}

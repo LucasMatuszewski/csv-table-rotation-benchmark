@@ -16,9 +16,10 @@ var (
 // SquareLen returns the side length if len is a perfect square (n × n), else returns an error.
 //
 // Examples:
-//   SquareLen(4) returns 2, nil
-//   SquareLen(9) returns 3, nil  
-//   SquareLen(5) returns 0, ErrNotSquare
+//
+//	SquareLen(4) returns 2, nil
+//	SquareLen(9) returns 3, nil
+//	SquareLen(5) returns 0, ErrNotSquare
 func SquareLen(length int) (int, error) {
 	if length == 0 {
 		return 0, ErrEmpty
@@ -46,15 +47,18 @@ func SquareLen(length int) (int, error) {
 // - Space: O(1) - uses only two temporary variables
 //
 // Arguments:
-//   data - Slice containing the table elements (modified in-place)
+//
+//	data - Slice containing the table elements (modified in-place)
 //
 // Returns:
-//   error - ErrEmpty if slice is empty, ErrNotSquare if not a perfect square
+//
+//	error - ErrEmpty if slice is empty, ErrNotSquare if not a perfect square
 //
 // Examples:
-//   data := []int{40, 20, 90, 10}
-//   err := RotateRight(data)
-//   // data is now [90, 40, 10, 20]
+//
+//	data := []int{40, 20, 90, 10}
+//	err := RotateRight(data)
+//	// data is now [90, 40, 10, 20]
 func RotateRight[T any](data []T) error {
 	length := len(data)
 
@@ -98,7 +102,7 @@ func rotateRingClockwise[T any](data []T, n int, layer int) {
 		prev = temp
 	}
 
-	// Right column: top+1 → bottom  
+	// Right column: top+1 → bottom
 	for row := first + 1; row <= last; row++ {
 		temp := data[idx(n, row, last)]
 		data[idx(n, row, last)] = prev
@@ -126,4 +130,4 @@ func rotateRingClockwise[T any](data []T, n int, layer int) {
 // index = row * n + col
 func idx(n, row, col int) int {
 	return row*n + col
-} 
+}
