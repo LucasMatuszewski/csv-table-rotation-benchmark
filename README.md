@@ -60,6 +60,9 @@ A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeS
       - [3. **Cursor** (Primary development environment)](#3-cursor-primary-development-environment)
     - [Cost Analysis](#cost-analysis)
     - [Key Takeaways](#key-takeaways)
+  - [Development Setup](#development-setup)
+    - [**VSCode/Cursor Setup**](#vscodecursor-setup)
+    - [**Manual Formatting Commands**](#manual-formatting-commands)
   - [Testing](#testing)
   - [CI/CD](#cicd)
 
@@ -513,6 +516,7 @@ This repository was built using various AI-powered development tools to demonstr
   - Auth error lockout (couldn't log back in, "Sign in" button unresponsive)
   - Line-based diff (vs Cursor's character-level diff)
   - Not possible to select and add to chat context (like Cursor's "Add to chat" button)
+  - ChatGPT macOS App doesn't support "Work with Apps" for Zed (it does for Cursor)
 - **Efficiency**: Used all 150 free trial prompts for just Rust + partial TS implementation
 - **Result**: Promising but not production-ready IMHO
 
@@ -541,6 +545,32 @@ Both tools offer **$20/month for ~500 requests/prompts**, but:
 2. **Zed shows promise** - Speed and privacy features are compelling, but needs stability improvements. I love Open Source so will watch it's development and it stays installed on my machine.
 3. **AI tool pricing varies significantly** in actual value delivered per dollar
 4. **Claude Sonnet 4** replaced Gemini 2.5 Pro as my preferred model for code generation (produces much smaller diff, is more precise in changes, follows instructions better, etc.)
+
+## Development Setup
+
+This project includes automatic formatting configuration for all languages:
+
+### **VSCode/Cursor Setup**
+
+- **Automatic formatting** on save and paste for all languages
+- **Recommended extensions** - Install prompted extensions for full language support
+- **EditorConfig** - Consistent indentation and line endings across editors
+
+### **Manual Formatting Commands**
+
+```bash
+# Go formatting
+cd go && gofmt -s -w .
+
+# Rust formatting
+cd rust && cargo fmt
+
+# TypeScript formatting
+cd typescript && npm run lint:fix
+
+# Python formatting
+cd python && black . && isort .
+```
 
 ## Testing
 

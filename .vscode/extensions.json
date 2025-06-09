@@ -1,0 +1,39 @@
+{
+  "recommendations": [
+    // Go support
+    "golang.go",
+
+    // Rust support
+    "rust-lang.rust-analyzer",
+    "vadimcn.vscode-lldb", // For debugging Rust
+
+    // TypeScript/JavaScript support
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+
+    // Python support
+    "ms-python.python",
+    "ms-python.black-formatter",
+    "ms-python.mypy-type-checker",
+
+    // General productivity
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+
+    // Markdown
+    "yzhang.markdown-all-in-one",
+
+    // Testing
+    "hbenl.vscode-test-explorer",
+
+    // Performance and monitoring
+    "ms-vscode.vscode-typescript-next" // Latest TypeScript features
+  ],
+
+  "unwantedRecommendations": [
+    // Avoid conflicting formatters
+    "ms-vscode.vscode-typescript-next", // Only if you want bleeding edge
+    "bradlc.vscode-tailwindcss" // Not relevant for this project
+  ]
+}
