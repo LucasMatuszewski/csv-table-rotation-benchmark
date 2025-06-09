@@ -40,7 +40,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .from_writer(io::stdout());
 
     // Write output headers
-    wtr.write_record(&["id", "json", "is_valid"])?;
+    wtr.write_record(["id", "json", "is_valid"])?;
 
     // Process each record
     for result in rdr.records() {
@@ -59,7 +59,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let (rotated_json, is_valid) = process_json_array(json_text);
 
         // Write output record
-        wtr.write_record(&[id, &rotated_json, if is_valid { "true" } else { "false" }])?;
+        wtr.write_record([id, &rotated_json, if is_valid { "true" } else { "false" }])?;
     }
 
     wtr.flush()?;
