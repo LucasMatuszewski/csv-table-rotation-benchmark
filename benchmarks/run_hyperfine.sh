@@ -25,6 +25,7 @@ readonly NC='\033[0m' # No Color
 readonly RUST_BINARY="./rust/target/release/rotate_cli"
 readonly TS_BINARY="node ./typescript/dist/index.js"
 readonly PYTHON_BINARY="./python/venv/bin/python -m rotate_cli"
+readonly GO_BINARY="./go/bin/rotate"
 readonly INPUT_SAMPLE="./input-samples/sample-1k.csv"
 readonly BENCHMARKS_DIR="./benchmarks"
 readonly RESULTS_DIR="${BENCHMARKS_DIR}/results"
@@ -87,6 +88,17 @@ check_dependencies() {
         fi
     fi
     
+    # Check if Go binary exists and is built
+    if [[ ! -f "${GO_BINARY}" ]]; then
+        log_warning "Go binary not found. Building..."
+        (cd go && go build -o ./bin/rotate ./cmd/rotate)
+        
+        if [[ ! -f "${GO_BINARY}" ]]; then
+            log_error "Failed to build Go binary"
+            exit 1
+        fi
+    fi
+    
     # Check if input sample exists
     if [[ ! -f "${INPUT_SAMPLE}" ]]; then
         log_error "Input sample file not found: ${INPUT_SAMPLE}"
@@ -96,6 +108,12 @@ check_dependencies() {
     # Check if node is available for TypeScript
     if ! command -v node &> /dev/null; then
         log_error "Node.js is required for TypeScript benchmarks"
+        exit 1
+    fi
+    
+    # Check if go is available for Go
+    if ! command -v go &> /dev/null; then
+        log_error "Go is required for Go benchmarks"
         exit 1
     fi
     
@@ -138,6 +156,7 @@ benchmark_basic_performance() {
         --export-json "${RESULTS_DIR}/basic_performance_${timestamp}.json" \
         --export-csv "${RESULTS_DIR}/basic_performance_${timestamp}.csv" \
         --command-name "Rust CLI" "${RUST_BINARY} ${test_data_dir}/medium.csv" \
+        --command-name "Go CLI" "${GO_BINARY} ${test_data_dir}/medium.csv" \
         --command-name "TypeScript CLI" "${TS_BINARY} ${test_data_dir}/medium.csv" \
         --command-name "Python CLI" "${PYTHON_BINARY} ${test_data_dir}/medium.csv"
     
@@ -159,6 +178,7 @@ benchmark_data_size_scaling() {
         --max-runs ${MAX_RUNS} \
         --export-markdown "${RESULTS_DIR}/scaling_small_${timestamp}.md" \
         --command-name "Rust (small)" "${RUST_BINARY} ${test_data_dir}/small.csv" \
+        --command-name "Go (small)" "${GO_BINARY} ${test_data_dir}/small.csv" \
         --command-name "TypeScript (small)" "${TS_BINARY} ${test_data_dir}/small.csv" \
         --command-name "Python (small)" "${PYTHON_BINARY} ${test_data_dir}/small.csv"
     
@@ -170,6 +190,7 @@ benchmark_data_size_scaling() {
         --max-runs ${MAX_RUNS} \
         --export-markdown "${RESULTS_DIR}/scaling_medium_${timestamp}.md" \
         --command-name "Rust (medium)" "${RUST_BINARY} ${test_data_dir}/medium.csv" \
+        --command-name "Go (medium)" "${GO_BINARY} ${test_data_dir}/medium.csv" \
         --command-name "TypeScript (medium)" "${TS_BINARY} ${test_data_dir}/medium.csv" \
         --command-name "Python (medium)" "${PYTHON_BINARY} ${test_data_dir}/medium.csv"
     
@@ -181,6 +202,7 @@ benchmark_data_size_scaling() {
         --max-runs ${MAX_RUNS} \
         --export-markdown "${RESULTS_DIR}/scaling_large_${timestamp}.md" \
         --command-name "Rust (large)" "${RUST_BINARY} ${test_data_dir}/large.csv" \
+        --command-name "Go (large)" "${GO_BINARY} ${test_data_dir}/large.csv" \
         --command-name "TypeScript (large)" "${TS_BINARY} ${test_data_dir}/large.csv" \
         --command-name "Python (large)" "${PYTHON_BINARY} ${test_data_dir}/large.csv"
     
@@ -201,6 +223,7 @@ benchmark_startup_overhead() {
         --max-runs 25 \
         --export-markdown "${RESULTS_DIR}/startup_overhead_${timestamp}.md" \
         --command-name "Rust startup" "${RUST_BINARY} ${test_data_dir}/small.csv" \
+        --command-name "Go startup" "${GO_BINARY} ${test_data_dir}/small.csv" \
         --command-name "TypeScript startup" "${TS_BINARY} ${test_data_dir}/small.csv" \
         --command-name "Python startup" "${PYTHON_BINARY} ${test_data_dir}/small.csv"
     
@@ -229,6 +252,7 @@ benchmark_with_preparation() {
                  --prepare 'sync && sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"' \
                  --export-markdown "${RESULTS_DIR}/cold_cache_${timestamp}.md" \
                  --command-name "Rust (cold cache)" "${RUST_BINARY} ${test_data_dir}/large.csv" \
+                 --command-name "Go (cold cache)" "${GO_BINARY} ${test_data_dir}/large.csv" \
                  --command-name "TypeScript (cold cache)" "${TS_BINARY} ${test_data_dir}/large.csv"
             log_success "Cold cache benchmarks completed"
         else
@@ -258,6 +282,7 @@ run_comprehensive_comparison() {
         --export-json "${RESULTS_DIR}/comprehensive_comparison_${timestamp}.json" \
         --style full \
         --command-name "🦀 Rust Implementation" "${RUST_BINARY} ${test_data_dir}/large.csv" \
+        --command-name "🐹 Go Implementation" "${GO_BINARY} ${test_data_dir}/large.csv" \
         --command-name "📜 TypeScript Implementation" "${TS_BINARY} ${test_data_dir}/large.csv" \
         --command-name "🐍 Python Implementation" "${PYTHON_BINARY} ${test_data_dir}/large.csv"
     

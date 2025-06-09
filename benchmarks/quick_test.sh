@@ -31,6 +31,12 @@ if [[ ! -f "./rust/target/release/rotate_cli" ]]; then
     exit 1
 fi
 
+if [[ ! -f "./go/bin/rotate" ]]; then
+    echo "❌ Go binary not found. Please build it first:"
+    echo "  cd go && go build -o ./bin/rotate ./cmd/rotate"
+    exit 1
+fi
+
 if [[ ! -f "./typescript/dist/index.js" ]]; then
     echo "❌ TypeScript binary not found. Please build it first:"
     echo "  cd typescript && npm run build"
@@ -92,6 +98,7 @@ hyperfine \
     --max-runs 10 \
     --export-markdown "./benchmarks/results/quick_test_results.md" \
     --command-name "🦀 Rust CLI" "./rust/target/release/rotate_cli ./benchmarks/results/quick_test.csv" \
+    --command-name "🐹 Go CLI" "./go/bin/rotate ./benchmarks/results/quick_test.csv" \
     --command-name "📜 TypeScript CLI" "node ./typescript/dist/index.js ./benchmarks/results/quick_test.csv" \
     --command-name "🐍 Python CLI" "./python/venv/bin/python -m rotate_cli ./benchmarks/results/quick_test.csv"
 
