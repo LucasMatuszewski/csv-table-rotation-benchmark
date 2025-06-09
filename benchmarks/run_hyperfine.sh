@@ -236,6 +236,12 @@ benchmark_with_preparation() {
     
     log_info "Running benchmarks with cache clearing (cold cache simulation)..."
     
+    # Skip cold cache benchmarks in CI environments to avoid permission issues
+    if [[ "${CI:-false}" == "true" ]] || [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+        log_warning "CI environment detected. Skipping cold cache benchmarks (requires system-level permissions)."
+        return 0
+    fi
+    
     # Benchmark with cache clearing to simulate cold cache performance
     # Note: This requires appropriate permissions on some systems
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -244,17 +250,24 @@ benchmark_with_preparation() {
         log_info "Running cold cache benchmark (Linux)..."
         
         if sudo -n true 2>/dev/null; then
-                         hyperfine \
-                 --shell=none \
-                 --warmup 2 \
-                 --min-runs 8 \
-                 --max-runs 15 \
-                 --prepare 'sync && sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"' \
-                 --export-markdown "${RESULTS_DIR}/cold_cache_${timestamp}.md" \
-                 --command-name "Rust (cold cache)" "${RUST_BINARY} ${test_data_dir}/large.csv" \
-                 --command-name "Go (cold cache)" "${GO_BINARY} ${test_data_dir}/large.csv" \
-                 --command-name "TypeScript (cold cache)" "${TS_BINARY} ${test_data_dir}/large.csv"
-            log_success "Cold cache benchmarks completed"
+            # Use || true to make this non-fatal - cold cache is nice-to-have, not essential
+            hyperfine \
+                --shell=none \
+                --warmup 2 \
+                --min-runs 8 \
+                --max-runs 15 \
+                --prepare 'sync && sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"' \
+                --export-markdown "${RESULTS_DIR}/cold_cache_${timestamp}.md" \
+                --command-name "Rust (cold cache)" "${RUST_BINARY} ${test_data_dir}/large.csv" \
+                --command-name "Go (cold cache)" "${GO_BINARY} ${test_data_dir}/large.csv" \
+                --command-name "TypeScript (cold cache)" "${TS_BINARY} ${test_data_dir}/large.csv" \
+                || log_warning "Cold cache benchmark failed (permission issues), but continuing..."
+            
+            if [[ -f "${RESULTS_DIR}/cold_cache_${timestamp}.md" ]]; then
+                log_success "Cold cache benchmarks completed"
+            else
+                log_warning "Cold cache benchmarks skipped due to system restrictions"
+            fi
         else
             log_warning "Sudo access not available. Skipping cold cache benchmarks."
         fi
