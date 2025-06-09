@@ -3,11 +3,33 @@
 [![CI](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/ci.yml)
 [![Benchmarks](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/bench.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/bench.yml)
 
-A high-performance CSV table rotation tool implemented in Rust, TypeScript, and Python to demonstrate cross-language performance characteristics and coding practices.
+## 🚀 TL;DR - Performance Results
+
+A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeScript, and Python** using identical algorithms. [See full benchmarks](#performance-benchmarks). Built with AI assistance (see [Zed vs Cursor comparison](#-ai-tools-comparison)) to demonstrate cross-language performance characteristics.
+
+**🏆 Benchmark Results (Comprehensive Dataset):**
+
+| Language          | Small Dataset | Medium Dataset | Large Dataset | Startup Time | Performance Rank           |
+| ----------------- | ------------- | -------------- | ------------- | ------------ | -------------------------- |
+| 🦀 **Rust**       | 1.4ms         | 1.4ms          | 3.0ms         | 1.4ms        | 🥇 **1st** - Fastest       |
+| 🐹 **Go**         | 1.8ms         | 2.0ms          | 12.8ms        | 1.7ms        | 🥈 **2nd** - Excellent     |
+| 🐍 **Python**     | 17.0ms        | 17.7ms         | 35.8ms        | 16.6ms       | 🥉 **3rd** - Solid         |
+| 📜 **TypeScript** | 32.0ms        | 34.0ms         | 42.7ms        | 29.0ms       | **4th** - Node.js overhead |
+
+**Key Insights:**
+
+- **Rust wins overall** - Zero-cost abstractions and compiled efficiency
+- **Go excellent startup** - Only 28% slower than Rust for small tasks
+- **Python consistency** - Steady ~12× gap, efficient interpreter
+- **TypeScript struggles** - V8 startup overhead dominates small workloads
+- **Algorithm-level performance** - Go is 2.3-2.6× slower than Rust in [micro-benchmarks](#1-micro-benchmarks-algorithm-level-performance) (pure rotation algorithm)
+
+---
 
 ## Table of Contents
 
 - [Table Rotation CLI - Polyglot Implementation](#table-rotation-cli---polyglot-implementation)
+  - [🚀 TL;DR - Performance Results](#-tldr---performance-results)
   - [Table of Contents](#table-of-contents)
   - [Problem Statement](#problem-statement)
   - [How it works](#how-it-works)
@@ -25,11 +47,19 @@ A high-performance CSV table rotation tool implemented in Rust, TypeScript, and 
   - [Repository Structure](#repository-structure)
   - [Language Implementations](#language-implementations)
     - [Rust](#rust)
+    - [Go](#go)
     - [TypeScript](#typescript)
     - [Python](#python)
   - [Performance Benchmarks](#performance-benchmarks)
-    - [1. Micro-benchmarks (Criterion - Rust only)](#1-micro-benchmarks-criterion---rust-only)
+    - [1. Micro-benchmarks (Algorithm-level performance)](#1-micro-benchmarks-algorithm-level-performance)
     - [2. End-to-end CLI benchmarks (Hyperfine - Cross-language)](#2-end-to-end-cli-benchmarks-hyperfine---cross-language)
+  - [🤖 AI Tools Comparison](#-ai-tools-comparison)
+    - [Tools Used](#tools-used)
+      - [1. **macOS ChatGPT App with o3** + Search + "Work with Apps" (Cursor access)](#1-macos-chatgpt-app-with-o3--search--work-with-apps-cursor-access)
+      - [2. **Zed Editor** (Rust-based, fast but unstable)](#2-zed-editor-rust-based-fast-but-unstable)
+      - [3. **Cursor** (Primary development environment)](#3-cursor-primary-development-environment)
+    - [Cost Analysis](#cost-analysis)
+    - [Key Takeaways](#key-takeaways)
   - [Testing](#testing)
   - [CI/CD](#cicd)
 
@@ -182,6 +212,7 @@ cd csv-table-rotation-benchmark
 
 # Run any implementation
 ./rust/target/release/rotate_cli input-samples/sample-1k.csv > output.csv
+./go/bin/rotate input-samples/sample-1k.csv > output.csv
 node typescript/dist/index.js input-samples/sample-1k.csv > output.csv
 python -m rotate_cli input-samples/sample-1k.csv > output.csv
 ```
@@ -199,6 +230,11 @@ csv-table-rotation-benchmark/
 │   ├── src/
 │   ├── tests/
 │   └── benches/
+├── go/                        # Go implementation
+│   ├── go.mod
+│   ├── internal/rotate/
+│   ├── cmd/rotate/
+│   └── bin/
 ├── typescript/                # TypeScript/Node.js implementation
 │   ├── package.json
 │   ├── src/
@@ -235,6 +271,33 @@ cargo bench  # Performance benchmarks
 - Memory-efficient in-place rotation algorithm
 - Comprehensive error handling with custom error types
 - Property-based testing with `proptest`
+
+### Go
+
+**Build & Run:**
+
+```bash
+cd go
+go build -o ./bin/rotate ./cmd/rotate
+./bin/rotate ../input-samples/sample-1k.csv > output-go.csv
+```
+
+**Test:**
+
+```bash
+go test ./... -v                                        # All tests
+go test -bench=. -run=^$ ./internal/rotate              # Benchmarks only
+go test -bench=BenchmarkRotationSizes ./internal/rotate # Specific benchmark
+```
+
+**Features:**
+
+- Streaming CSV processing using standard library
+- Memory-efficient in-place rotation with generics
+- Comprehensive error handling with custom error types
+- Zero third-party dependencies (stdlib only)
+- CLI integration tests with temporary file handling
+- Built-in benchmarking with testing.B
 
 ### TypeScript
 
@@ -300,13 +363,27 @@ mypy rotate_cli/  # Type checking
 
 We provide two complementary types of benchmarks:
 
-### 1. Micro-benchmarks (Criterion - Rust only)
+### 1. Micro-benchmarks (Algorithm-level performance)
 
-Detailed algorithm-level performance analysis:
+Detailed algorithm-level performance analysis for compiled languages:
+
+**Rust:**
+
+Criterion is used for Rust benchmarks.
 
 ```bash
 cd rust
 cargo bench --bench rotation_bench
+```
+
+**Go:**
+
+Go uses testing.B for benchmarks.
+
+```bash
+cd go
+go test -bench=. -run=^$ ./internal/rotate  # Benchmarks only (excludes unit tests)
+# Note: -run=^$ means "run no tests" (empty regex), -bench=. means "run all benchmarks"
 ```
 
 **What it measures:**
@@ -317,12 +394,24 @@ cargo bench --bench rotation_bench
 - Edge case handling performance
 - Multiple rotation cycles for consistency testing
 
+**Key Results Comparison (Rust vs Go):**
+
+| Matrix Size | Rust (Criterion) | Go (testing.B) | Go vs Rust  |
+| ----------- | ---------------- | -------------- | ----------- |
+| 1×1         | ~2.5 ns/op       | ~6.3 ns/op     | 2.5× slower |
+| 4×4         | ~8.2 ns/op       | ~20.7 ns/op    | 2.5× slower |
+| 10×10       | ~40 ns/op        | ~95.4 ns/op    | 2.4× slower |
+| 25×25       | ~200 ns/op       | ~517.5 ns/op   | 2.6× slower |
+| 100×100     | ~3.2 μs/op       | ~7.3 μs/op     | 2.3× slower |
+
 **Key insights:**
 
-- Rotation time scales linearly with matrix elements (O(N²) confirmed)
-- In-place algorithm uses only ~750 picoseconds for validation
-- Performance is consistent across different data patterns
-- Large matrices (100×100) process at ~2.3 billion elements/second
+- **Consistent performance gap**: Go is ~2.3-2.6× slower than Rust across all matrix sizes
+- **Perfect O(N²) scaling**: Both languages scale identically with matrix size
+- **Memory efficiency**: Go uses single allocation per operation (consistent 1 alloc/op)
+- **Validation speed**: Square length validation extremely fast in both (~0.23ns Go, ~0.75ps Rust)
+- **Algorithm efficiency**: In-place rotation processes 100×100 matrices at ~1.4 billion elements/second (Go) vs ~3.1 billion (Rust)
+- **Memory allocation**: Go's GC overhead visible but minimal impact on algorithmic performance
 
 ### 2. End-to-end CLI benchmarks (Hyperfine - Cross-language)
 
@@ -363,11 +452,11 @@ pip install -e ".[dev]"
 **Sample Results (Data Size Scaling):**
 
 ```
-| Dataset | Rust Time | Python Time | TypeScript Time | Rust vs Python | Rust vs TypeScript |
-|---------|-----------|-------------|-----------------|-----------------|-------------------|
-| Small   | 1.4ms     | 16.8ms      | 29.0ms         | 12.0× faster    | 20.7× faster      |
-| Medium  | 1.5ms     | 17.4ms      | 31.3ms         | 11.6× faster    | 20.9× faster      |
-| Large   | 3.0ms     | 35.8ms      | 39.5ms         | 11.9× faster    | 13.2× faster      |
+| Dataset | Rust  | Go     | Python | TypeScript | Rust vs Go  | Rust vs Py   | Rust vs TS   |
+|---------|-------|--------|--------|------------|-------------|--------------|--------------|
+| Small   | 1.4ms | 1.8ms  | 17.0ms | 32.0ms     | 1.3× faster | 12.3× faster | 23.3× faster |
+| Medium  | 1.4ms | 2.0ms  | 17.7ms | 34.0ms     | 1.4× faster | 12.3× faster | 23.6× faster |
+| Large   | 3.0ms | 12.8ms | 35.8ms | 42.7ms     | 4.2× faster | 11.9× faster | 14.3× faster |
 ```
 
 **Startup Overhead Analysis:**
@@ -376,6 +465,7 @@ pip install -e ".[dev]"
 | Language   | Startup Time | vs Rust |
 |------------|--------------|---------|
 | Rust       | 1.4ms        | 1.00×   |
+| Go         | 1.7ms        | 1.28×   |
 | Python     | 16.6ms       | 11.9×   |
 | TypeScript | 29.0ms       | 20.7×   |
 ```
@@ -383,17 +473,74 @@ pip install -e ".[dev]"
 **Performance Ranking:**
 
 1. **Rust** (1.4-3.0ms) - Fastest with excellent scaling; compiled efficiency and zero-cost abstractions
-2. **Python** (16.8-35.8ms) - ~12× slower; consistent performance, efficient built-in modules
-3. **TypeScript/Node.js** (29.0-39.5ms) - ~13-21× slower; V8 JIT performance limited by startup overhead
+2. **Go** (1.7-12.8ms) - ~1.3-4.2× slower; excellent startup time, some variance with large datasets
+3. **Python** (16.6-35.8ms) - ~12× slower; consistent performance, efficient built-in modules
+4. **TypeScript** (29.0-42.7ms) - ~14-24× slower; V8 JIT performance limited by startup overhead
 
 **Key Performance Insights:**
 
 - **Perfect algorithmic scaling**: Rust demonstrates O(N²) scaling (1.4ms → 3.0ms for ~25× larger matrices)
-- **Startup overhead dominance**: Both Python (~16.6ms) and TypeScript (~29ms) have significant startup costs compared to Rust (~1.4ms)
+- **Go performance characteristics**: Excellent startup time (~1.7ms), but shows more variance with large datasets (12.8ms) compared to Rust
+- **Startup overhead dominance**: Both Python (~16.6ms) and TypeScript (~29ms) have significant startup costs compared to compiled languages
 - **Python consistency**: Maintains steady ~12× performance gap across all dataset sizes, with startup being the primary bottleneck
 - **TypeScript scaling**: Shows diminishing startup penalty as datasets grow (21× slower → 13× slower), but startup overhead remains substantial
-- **Runtime characteristics**: For small workloads, startup overhead dominates; Python's interpreter is more efficient than Node.js V8 initialization
+- **Runtime characteristics**: For small workloads, startup overhead dominates; compiled languages (Rust, Go) have clear advantages. Python's interpreter is more efficient than Node.js V8 initialization
 - **Cross-language consistency**: All implementations use identical algorithm ensuring performance comparison reflects language/runtime differences, not algorithmic ones
+
+## 🤖 AI Tools Comparison
+
+This repository was built using various AI-powered development tools to demonstrate their capabilities in cross-language development. Fully codded in my **Viture Pro XR Glasses** during 2 days I get flu and stayed in bed ;)
+
+### Tools Used
+
+#### 1. **macOS ChatGPT App with o3** + Search + "Work with Apps" (Cursor access)
+
+- **Usage**: Research, ideation, best practices, and planning
+- **Strengths**: Excellent for high-level architecture and research
+- **Role**: Project planning and initial algorithm design
+
+#### 2. **Zed Editor** (Rust-based, fast but unstable)
+
+- **Usage**: Full Rust implementation + part of TypeScript
+- **Strengths**:
+  - Very fast performance (but I never complained on Cursor/VSCode speed)
+  - "Follow Agent" mode
+  - Context size counter
+  - Privacy and local model support
+  - It's OPEN SOURCE, so you can see the code and contribute!
+- **Issues Encountered**:
+  - 1 crash without explanation (just restart)
+  - Auth error lockout (couldn't log back in, "Sign in" button unresponsive)
+  - Line-based diff (vs Cursor's character-level diff)
+  - Not possible to select and add to chat context (like Cursor's "Add to chat" button)
+- **Efficiency**: Used all 150 free trial prompts for just Rust + partial TS implementation
+- **Result**: Promising but not production-ready IMHO
+
+#### 3. **Cursor** (Primary development environment)
+
+- **Usage**: Remaining TypeScript, Python, Go, Hyperfine benchmarks, CI/CD
+- **Strengths**:
+  - Reliable and stable
+  - Character-level diff highlighting
+  - Full VSCode ecosystem, extensions, etc.
+  - More efficient "request" usage (much cheaper than Zed prompts in my tests)
+- **Efficiency**: 50 requests accomplished significantly more work than Zed's 150 prompts
+- **Result**: Most productive for actual implementation
+
+### Cost Analysis
+
+Both tools offer **$20/month for ~500 requests/prompts**, but:
+
+- **Cursor**: 500 requests = substantial work (this project used ~50 for most implementations)
+- **Zed**: 500 prompts = less work (150 prompts only completed Rust + partial TS)
+- **Claude Sonnet 4**: Currently uses 0.75 request weight in Cursor
+
+### Key Takeaways
+
+1. **Cursor wins for productivity** - More stable, mature, better diff visualization, efficient request usage
+2. **Zed shows promise** - Speed and privacy features are compelling, but needs stability improvements. I love Open Source so will watch it's development and it stays installed on my machine.
+3. **AI tool pricing varies significantly** in actual value delivered per dollar
+4. **Claude Sonnet 4** replaced Gemini 2.5 Pro as my preferred model for code generation (produces much smaller diff, is more precise in changes, follows instructions better, etc.)
 
 ## Testing
 
@@ -408,7 +555,7 @@ Each implementation includes:
 
 GitHub Actions workflows:
 
-- **`ci.yml`** - Build, test, and lint all three implementations in parallel
+- **`ci.yml`** - Build, test, and lint all four implementations in parallel
 - **`bench.yml`** - Performance benchmarking with artifact upload
 
 All implementations must pass:
