@@ -146,6 +146,7 @@ async function processFile(inputFile: string): Promise<void> {
     delimiter: ',',
     quote: '"',
     escape: '"',
+    includeEndRowDelimiter: true, // Ensure final newline
     // quoteColumns: { json: true }, // Force quoting json column
   });
 

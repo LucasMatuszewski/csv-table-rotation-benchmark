@@ -1,0 +1,54 @@
+name: Python Compatibility Testing
+
+on:
+  workflow_dispatch:
+    # Allow manual triggering
+  release:
+    types: [published]
+
+jobs:
+  python-compatibility:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Install package with dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+        working-directory: python
+
+      - name: Type check with mypy
+        run: mypy rotate_cli/
+        working-directory: python
+
+      - name: Run tests with pytest
+        run: pytest tests/ -v --tb=short
+        working-directory: python
+
+      - name: Test CLI with sample data
+        run: python -m rotate_cli ../input-samples/sample-1k.csv > /tmp/python-output.csv
+        working-directory: python
+
+      - name: Verify output format
+        run: |
+          head -1 /tmp/python-output.csv | grep -q "id,json,is_valid"
+          wc -l < /tmp/python-output.csv

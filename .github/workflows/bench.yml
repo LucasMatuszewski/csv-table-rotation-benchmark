@@ -37,8 +37,8 @@ jobs:
 
       - name: Install hyperfine
         run: |
-          wget https://github.com/sharkdp/hyperfine/releases/latest/download/hyperfine_1.18.0_amd64.deb
-          sudo dpkg -i hyperfine_1.18.0_amd64.deb
+          # Install hyperfine using cargo (most reliable method)
+          cargo install hyperfine --locked
 
       # Cache dependencies
       - name: Cache Rust dependencies
