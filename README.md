@@ -1,5 +1,8 @@
 # Table Rotation CLI - Polyglot Implementation
 
+[![CI](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/ci.yml)
+[![Benchmarks](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/bench.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-cli/actions/workflows/bench.yml)
+
 A high-performance CSV table rotation tool implemented in Rust, TypeScript, and Python to demonstrate cross-language performance characteristics and coding practices.
 
 ## Table of Contents

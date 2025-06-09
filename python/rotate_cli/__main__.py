@@ -37,7 +37,7 @@ def process_csv_row(row: Dict[str, str]) -> Dict[str, Any]:
             return {
                 'id': row_id,
                 'json': '[]',
-                'is_valid': False
+                'is_valid': 'false'  # Lowercase to match Rust/TypeScript
             }
         
         # Try to rotate the array
@@ -46,8 +46,8 @@ def process_csv_row(row: Dict[str, str]) -> Dict[str, Any]:
         # Success - return the rotated result
         return {
             'id': row_id,
-            'json': json.dumps(numbers),
-            'is_valid': True
+            'json': json.dumps(numbers, separators=(',', ':')),  # No spaces after commas
+            'is_valid': 'true'  # Lowercase to match Rust/TypeScript
         }
         
     except (json.JSONDecodeError, RotationError):
@@ -55,7 +55,7 @@ def process_csv_row(row: Dict[str, str]) -> Dict[str, Any]:
         return {
             'id': row_id,
             'json': '[]',
-            'is_valid': False
+            'is_valid': 'false'  # Lowercase to match Rust/TypeScript
         }
 
 
