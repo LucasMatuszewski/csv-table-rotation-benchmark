@@ -37,6 +37,19 @@ if [[ ! -f "./typescript/dist/index.js" ]]; then
     exit 1
 fi
 
+# Check if Python virtual environment and package are available
+if [[ ! -f "./python/venv/bin/python" ]]; then
+    echo "❌ Python virtual environment not found. Please create it first:"
+    echo "  cd python && python -m venv venv && source venv/bin/activate && pip install -e \".[dev]\""
+    exit 1
+fi
+
+if ! ./python/venv/bin/python -c "import rotate_cli" &> /dev/null; then
+    echo "❌ Python package not found in venv. Please install it first:"
+    echo "  cd python && source venv/bin/activate && pip install -e \".[dev]\""
+    exit 1
+fi
+
 # Create a larger test file to get more meaningful benchmarks
 mkdir -p ./benchmarks/results
 {
@@ -79,7 +92,8 @@ hyperfine \
     --max-runs 10 \
     --export-markdown "./benchmarks/results/quick_test_results.md" \
     --command-name "🦀 Rust CLI" "./rust/target/release/rotate_cli ./benchmarks/results/quick_test.csv" \
-    --command-name "📜 TypeScript CLI" "node ./typescript/dist/index.js ./benchmarks/results/quick_test.csv"
+    --command-name "📜 TypeScript CLI" "node ./typescript/dist/index.js ./benchmarks/results/quick_test.csv" \
+    --command-name "🐍 Python CLI" "./python/venv/bin/python -m rotate_cli ./benchmarks/results/quick_test.csv"
 
 echo
 echo -e "${GREEN}✅ Quick test completed!${NC}"

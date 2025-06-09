@@ -24,6 +24,7 @@ readonly NC='\033[0m' # No Color
 # Configuration
 readonly RUST_BINARY="./rust/target/release/rotate_cli"
 readonly TS_BINARY="node ./typescript/dist/index.js"
+readonly PYTHON_BINARY="./python/venv/bin/python -m rotate_cli"
 readonly INPUT_SAMPLE="./input-samples/sample-1k.csv"
 readonly BENCHMARKS_DIR="./benchmarks"
 readonly RESULTS_DIR="${BENCHMARKS_DIR}/results"
@@ -98,6 +99,22 @@ check_dependencies() {
         exit 1
     fi
     
+    # Check if Python virtual environment exists and package is installed
+    if [[ ! -f "./python/venv/bin/python" ]]; then
+        log_warning "Python virtual environment not found. Creating..."
+        (cd python && python -m venv venv)
+    fi
+    
+    if ! ./python/venv/bin/python -c "import rotate_cli" &> /dev/null; then
+        log_warning "Python package not installed in venv. Installing..."
+        (cd python && ./venv/bin/pip install -e ".[dev]")
+        
+        if ! ./python/venv/bin/python -c "import rotate_cli" &> /dev/null; then
+            log_error "Failed to install Python package in venv"
+            exit 1
+        fi
+    fi
+    
     log_success "All dependencies check passed"
 }
 
@@ -121,7 +138,8 @@ benchmark_basic_performance() {
         --export-json "${RESULTS_DIR}/basic_performance_${timestamp}.json" \
         --export-csv "${RESULTS_DIR}/basic_performance_${timestamp}.csv" \
         --command-name "Rust CLI" "${RUST_BINARY} ${test_data_dir}/medium.csv" \
-        --command-name "TypeScript CLI" "${TS_BINARY} ${test_data_dir}/medium.csv"
+        --command-name "TypeScript CLI" "${TS_BINARY} ${test_data_dir}/medium.csv" \
+        --command-name "Python CLI" "${PYTHON_BINARY} ${test_data_dir}/medium.csv"
     
     log_success "Basic performance benchmark completed"
 }
@@ -236,7 +254,8 @@ run_comprehensive_comparison() {
         --export-json "${RESULTS_DIR}/comprehensive_comparison_${timestamp}.json" \
         --style full \
         --command-name "🦀 Rust Implementation" "${RUST_BINARY} ${test_data_dir}/large.csv" \
-        --command-name "📜 TypeScript Implementation" "${TS_BINARY} ${test_data_dir}/large.csv"
+        --command-name "📜 TypeScript Implementation" "${TS_BINARY} ${test_data_dir}/large.csv" \
+        --command-name "🐍 Python Implementation" "${PYTHON_BINARY} ${test_data_dir}/large.csv"
     
     log_success "Comprehensive comparison completed"
 }
