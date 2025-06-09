@@ -17,16 +17,16 @@ class TestProcessCSVRow:
         result = process_csv_row(row)
         
         assert result['id'] == '1'
-        assert result['json'] == '[3, 1, 4, 2]'
-        assert result['is_valid'] is True
+        assert result['json'] == '[3,1,4,2]'
+        assert result['is_valid'] == 'true'
 
     def test_processes_valid_3x3_matrix(self):
         row = {'id': '2', 'json': '[1, 2, 3, 4, 5, 6, 7, 8, 9]'}
         result = process_csv_row(row)
         
         assert result['id'] == '2'
-        assert result['json'] == '[4, 1, 2, 7, 5, 3, 8, 9, 6]'
-        assert result['is_valid'] is True
+        assert result['json'] == '[4,1,2,7,5,3,8,9,6]'
+        assert result['is_valid'] == 'true'
 
     def test_processes_valid_1x1_matrix(self):
         row = {'id': '3', 'json': '[-5]'}
@@ -34,7 +34,7 @@ class TestProcessCSVRow:
         
         assert result['id'] == '3'
         assert result['json'] == '[-5]'
-        assert result['is_valid'] is True
+        assert result['is_valid'] == 'true'
 
     def test_handles_invalid_non_square_array(self):
         row = {'id': '4', 'json': '[2, -5, -5]'}
@@ -42,7 +42,7 @@ class TestProcessCSVRow:
         
         assert result['id'] == '4'
         assert result['json'] == '[]'
-        assert result['is_valid'] is False
+        assert result['is_valid'] == 'false'
 
     def test_handles_invalid_json(self):
         row = {'id': '5', 'json': 'not valid json'}
@@ -50,7 +50,7 @@ class TestProcessCSVRow:
         
         assert result['id'] == '5'
         assert result['json'] == '[]'
-        assert result['is_valid'] is False
+        assert result['is_valid'] == 'false'
 
     def test_handles_non_number_array(self):
         row = {'id': '6', 'json': '["hello", "world"]'}
@@ -58,7 +58,7 @@ class TestProcessCSVRow:
         
         assert result['id'] == '6'
         assert result['json'] == '[]'
-        assert result['is_valid'] is False
+        assert result['is_valid'] == 'false'
 
     def test_handles_empty_array(self):
         row = {'id': '7', 'json': '[]'}
@@ -66,7 +66,7 @@ class TestProcessCSVRow:
         
         assert result['id'] == '7'
         assert result['json'] == '[]'
-        assert result['is_valid'] is False
+        assert result['is_valid'] == 'false'
 
 
 class TestProcessCSVStream:
@@ -82,10 +82,10 @@ class TestProcessCSVStream:
 
         # Expected output matching the recruitment test
         expected_output = '''id,json,is_valid
-1,"[4, 1, 2, 7, 5, 3, 8, 9, 6]",True
-2,"[90, 40, 10, 20]",True
-3,[-5],True
-4,[],False
+1,"[4,1,2,7,5,3,8,9,6]",true
+2,"[90,40,10,20]",true
+3,[-5],true
+4,[],false
 '''
 
         input_stream = io.StringIO(input_csv)
@@ -121,23 +121,23 @@ class TestProcessCSVStream:
         
         # Valid 2x2 matrix
         assert results[0]['id'] == '1'
-        assert results[0]['json'] == '[3, 1, 4, 2]'
-        assert results[0]['is_valid'] == 'True'
+        assert results[0]['json'] == '[3,1,4,2]'
+        assert results[0]['is_valid'] == 'true'
         
         # Invalid - not square
         assert results[1]['id'] == '2'
         assert results[1]['json'] == '[]'
-        assert results[1]['is_valid'] == 'False'
+        assert results[1]['is_valid'] == 'false'
         
         # Invalid - bad JSON
         assert results[2]['id'] == '3'
         assert results[2]['json'] == '[]'
-        assert results[2]['is_valid'] == 'False'
+        assert results[2]['is_valid'] == 'false'
         
         # Valid 1x1 matrix
         assert results[3]['id'] == '4'
         assert results[3]['json'] == '[5]'
-        assert results[3]['is_valid'] == 'True'
+        assert results[3]['is_valid'] == 'true'
 
     def test_handles_empty_csv(self):
         input_csv = 'id,json\n'
@@ -160,8 +160,8 @@ class TestAlgorithmConsistencyWithOtherImplementations:
         result = process_csv_row(row)
         
         # This should match Rust and TypeScript exactly
-        assert result['json'] == '[4, 1, 2, 7, 5, 3, 8, 9, 6]'
-        assert result['is_valid'] is True
+        assert result['json'] == '[4,1,2,7,5,3,8,9,6]'
+        assert result['is_valid'] == 'true'
 
     def test_2x2_case_exact_match(self):
         """Verify 2x2 rotation matches other implementations."""
@@ -169,8 +169,8 @@ class TestAlgorithmConsistencyWithOtherImplementations:
         result = process_csv_row(row)
         
         # This should match Rust and TypeScript exactly
-        assert result['json'] == '[90, 40, 10, 20]'
-        assert result['is_valid'] is True
+        assert result['json'] == '[90,40,10,20]'
+        assert result['is_valid'] == 'true'
 
     def test_negative_numbers_exact_match(self):
         """Verify negative number handling matches other implementations."""
@@ -178,5 +178,5 @@ class TestAlgorithmConsistencyWithOtherImplementations:
         result = process_csv_row(row)
         
         # This should match Rust and TypeScript exactly
-        assert result['json'] == '[-3, -1, -4, -2]'
-        assert result['is_valid'] is True 
+        assert result['json'] == '[-3,-1,-4,-2]'
+        assert result['is_valid'] == 'true' 
