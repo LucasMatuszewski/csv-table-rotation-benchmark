@@ -82,7 +82,7 @@ OPTIONS:
 function processJsonArray(jsonText: string): { json: string; isValid: boolean } {
   try {
     // Parse JSON
-    const parsedValue = JSON.parse(jsonText);
+    const parsedValue: unknown = JSON.parse(jsonText);
 
     // Validate that it's an array of numbers
     const numbers = validateNumberArray(parsedValue);
