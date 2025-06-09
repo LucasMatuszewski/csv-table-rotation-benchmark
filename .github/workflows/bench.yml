@@ -1,0 +1,252 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run benchmarks weekly on Sunday at 02:00 UTC to detect performance regressions
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  benchmark:
+    name: Cross-Language Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup all language environments
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: typescript/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install hyperfine
+        run: |
+          wget https://github.com/sharkdp/hyperfine/releases/latest/download/hyperfine_1.18.0_amd64.deb
+          sudo dpkg -i hyperfine_1.18.0_amd64.deb
+
+      # Cache dependencies
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-3.11-${{ hashFiles('python/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-3.11-
+
+      # Build all implementations
+      - name: Build Rust (release mode)
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Build TypeScript
+        run: |
+          npm ci
+          npm run build
+        working-directory: typescript
+
+      - name: Install Python package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+        working-directory: python
+
+      # Verify all binaries work
+      - name: Verify implementations
+        run: |
+          echo "Testing Rust implementation..."
+          ./rust/target/release/rotate_cli input-samples/sample-1k.csv | head -5
+
+          echo "Testing TypeScript implementation..."
+          node typescript/dist/index.js input-samples/sample-1k.csv | head -5
+
+          echo "Testing Python implementation..."
+          python -m rotate_cli input-samples/sample-1k.csv | head -5
+
+      # Create benchmark results directory
+      - name: Create benchmark results directory
+        run: |
+          mkdir -p benchmark-results
+          date > benchmark-results/benchmark-info.txt
+          echo "Runner: ${{ runner.os }}" >> benchmark-results/benchmark-info.txt
+          echo "Commit: ${{ github.sha }}" >> benchmark-results/benchmark-info.txt
+          echo "Ref: ${{ github.ref }}" >> benchmark-results/benchmark-info.txt
+
+      # Run comprehensive benchmarks
+      - name: Run comprehensive benchmarks
+        run: |
+          # Make script executable
+          chmod +x ./benchmarks/run_hyperfine.sh
+
+          # Run benchmarks with timestamp
+          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+          ./benchmarks/run_hyperfine.sh 2>&1 | tee benchmark-results/benchmark-log-${TIMESTAMP}.txt
+
+          # Copy all generated results
+          if [ -d "./benchmarks/results" ]; then
+            cp -r ./benchmarks/results/* benchmark-results/ || true
+          fi
+
+      # Performance regression check
+      - name: Performance regression check
+        run: |
+          # Extract key timing data for regression detection
+          echo "Extracting performance metrics..."
+
+          # Look for the latest comprehensive comparison results
+          LATEST_RESULT=$(find benchmark-results -name "comprehensive_comparison_*.md" | sort | tail -1)
+
+          if [ -f "$LATEST_RESULT" ]; then
+            echo "Found results file: $LATEST_RESULT"
+            
+            # Extract timing data (simple regex extraction)
+            RUST_TIME=$(grep "🦀 Rust Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
+            PYTHON_TIME=$(grep "🐍 Python Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
+            TS_TIME=$(grep "📜 TypeScript Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
+            
+            echo "Performance Results:"
+            echo "Rust: ${RUST_TIME}ms"
+            echo "Python: ${PYTHON_TIME}ms" 
+            echo "TypeScript: ${TS_TIME}ms"
+            
+            # Basic regression thresholds (in milliseconds)
+            RUST_THRESHOLD=10.0
+            PYTHON_THRESHOLD=100.0
+            TS_THRESHOLD=100.0
+            
+            # Check for performance regressions
+            if (( $(echo "$RUST_TIME > $RUST_THRESHOLD" | bc -l) )); then
+              echo "⚠️ Potential Rust performance regression: ${RUST_TIME}ms > ${RUST_THRESHOLD}ms"
+              echo "rust-regression=true" >> $GITHUB_OUTPUT
+            fi
+            
+            if (( $(echo "$PYTHON_TIME > $PYTHON_THRESHOLD" | bc -l) )); then
+              echo "⚠️ Potential Python performance regression: ${PYTHON_TIME}ms > ${PYTHON_THRESHOLD}ms"
+              echo "python-regression=true" >> $GITHUB_OUTPUT
+            fi
+            
+            if (( $(echo "$TS_TIME > $TS_THRESHOLD" | bc -l) )); then
+              echo "⚠️ Potential TypeScript performance regression: ${TS_TIME}ms > ${TS_THRESHOLD}ms"
+              echo "ts-regression=true" >> $GITHUB_OUTPUT
+            fi
+            
+            # Save metrics for artifact
+            echo "rust_time_ms=$RUST_TIME" > benchmark-results/performance-metrics.txt
+            echo "python_time_ms=$PYTHON_TIME" >> benchmark-results/performance-metrics.txt
+            echo "typescript_time_ms=$TS_TIME" >> benchmark-results/performance-metrics.txt
+            
+          else
+            echo "No comprehensive comparison results found"
+          fi
+
+      # Generate summary report
+      - name: Generate summary report
+        run: |
+          cat > benchmark-results/README.md << 'EOF'
+          # Performance Benchmark Results
+
+          Generated on: $(date)
+          Commit: ${{ github.sha }}
+          Branch/Ref: ${{ github.ref }}
+          Runner: ${{ runner.os }}
+
+          ## Files in this artifact:
+
+          - `benchmark-log-*.txt` - Complete benchmark execution log
+          - `comprehensive_comparison_*.md` - Detailed comparison results
+          - `scaling_*_*.md` - Data size scaling analysis  
+          - `startup_overhead_*.md` - Startup time analysis
+          - `*.json` - Machine-readable benchmark data
+          - `*.csv` - Spreadsheet-compatible results
+          - `performance-metrics.txt` - Key performance indicators
+
+          ## Quick Results Summary:
+
+          Check the `comprehensive_comparison_*.md` file for detailed results.
+
+          ## Performance Trends:
+
+          Monitor the `performance-metrics.txt` file for:
+          - Rust performance should be < 10ms
+          - Python performance should be < 100ms  
+          - TypeScript performance should be < 100ms
+
+          EOF
+
+      # Upload benchmark results as artifacts
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: benchmark-results/
+          retention-days: 30
+
+      # Comment on PR with benchmark results (if this is a PR)
+      - name: Comment PR with benchmark summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find the latest comprehensive comparison file
+            const resultsDir = 'benchmark-results';
+            const files = fs.readdirSync(resultsDir);
+            const compFile = files.find(f => f.startsWith('comprehensive_comparison_'));
+
+            if (compFile) {
+              const content = fs.readFileSync(path.join(resultsDir, compFile), 'utf8');
+              
+              // Extract the results table from markdown
+              const tableMatch = content.match(/\| Command.*?\n(\|.*?\n)+/s);
+              const summaryMatch = content.match(/Summary\n(.*ran.*?\n)+/s);
+              
+              let comment = `## 🚀 Performance Benchmark Results\n\n`;
+              comment += `Commit: \`${{ github.sha }}\`\n\n`;
+              
+              if (tableMatch) {
+                comment += `### Results\n\n${tableMatch[0]}\n`;
+              }
+              
+              if (summaryMatch) {
+                comment += `### Summary\n\n\`\`\`\n${summaryMatch[0]}\`\`\`\n`;
+              }
+              
+              comment += `\n📊 [Full benchmark results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }

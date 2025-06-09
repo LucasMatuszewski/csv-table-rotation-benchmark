@@ -1,0 +1,226 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  rust:
+    name: Rust CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Check formatting
+        run: cargo fmt --check
+        working-directory: rust
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+        working-directory: rust
+
+      - name: Build debug
+        run: cargo build --verbose
+        working-directory: rust
+
+      - name: Run tests
+        run: cargo test --verbose
+        working-directory: rust
+
+      - name: Build release
+        run: cargo build --release --verbose
+        working-directory: rust
+
+      - name: Test CLI with sample data
+        run: ./target/release/rotate_cli ../input-samples/sample-1k.csv > /tmp/rust-output.csv
+        working-directory: rust
+
+      - name: Verify output format
+        run: |
+          head -1 /tmp/rust-output.csv | grep -q "id,json,is_valid"
+          wc -l < /tmp/rust-output.csv
+
+  typescript:
+    name: TypeScript CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: typescript/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: typescript
+
+      - name: Type check
+        run: npm run type-check
+        working-directory: typescript
+
+      - name: Lint
+        run: npm run lint
+        working-directory: typescript
+
+      - name: Build
+        run: npm run build
+        working-directory: typescript
+
+      - name: Run tests
+        run: npm test
+        working-directory: typescript
+
+      - name: Test CLI with sample data
+        run: node dist/index.js ../input-samples/sample-1k.csv > /tmp/ts-output.csv
+        working-directory: typescript
+
+      - name: Verify output format
+        run: |
+          head -1 /tmp/ts-output.csv | grep -q "id,json,is_valid"
+          wc -l < /tmp/ts-output.csv
+
+  python:
+    name: Python CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Install package with dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+        working-directory: python
+
+      - name: Type check with mypy
+        run: mypy rotate_cli/
+        working-directory: python
+
+      - name: Run tests with pytest
+        run: pytest tests/ -v --tb=short
+        working-directory: python
+
+      - name: Test CLI with sample data
+        run: python -m rotate_cli ../input-samples/sample-1k.csv > /tmp/python-output.csv
+        working-directory: python
+
+      - name: Verify output format
+        run: |
+          head -1 /tmp/python-output.csv | grep -q "id,json,is_valid"
+          wc -l < /tmp/python-output.csv
+
+  integration:
+    name: Cross-Implementation Validation
+    runs-on: ubuntu-latest
+    needs: [rust, typescript, python]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup all environments
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: typescript/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Build all implementations
+      - name: Build Rust
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Build TypeScript
+        run: |
+          npm ci
+          npm run build
+        working-directory: typescript
+
+      - name: Install Python package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+        working-directory: python
+
+      # Run cross-validation tests
+      - name: Generate outputs from all implementations
+        run: |
+          ./rust/target/release/rotate_cli input-samples/sample-1k.csv > rust-output.csv
+          node typescript/dist/index.js input-samples/sample-1k.csv > ts-output.csv
+          python -m rotate_cli input-samples/sample-1k.csv > python-output.csv
+
+      - name: Compare outputs (should be identical)
+        run: |
+          # Compare Rust vs TypeScript
+          if ! diff rust-output.csv ts-output.csv; then
+            echo "❌ Rust and TypeScript outputs differ!"
+            exit 1
+          fi
+
+          # Compare Rust vs Python  
+          if ! diff rust-output.csv python-output.csv; then
+            echo "❌ Rust and Python outputs differ!"
+            exit 1
+          fi
+
+          echo "✅ All implementations produce identical outputs!"
+
+      - name: Upload output artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementation-outputs
+          path: |
+            rust-output.csv
+            ts-output.csv
+            python-output.csv
