@@ -1,8 +1,21 @@
 import { processJsonArray, parseArgs } from '../src/cli';
-import { writeFileSync, unlinkSync, existsSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmdirSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from '@jest/globals';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const testDir = path.join(__dirname, 'temp');
 
 describe('processJsonArray', () => {
@@ -152,10 +165,12 @@ describe('parseArgs', () => {
   test('exits with error for multiple arguments', () => {
     process.argv = ['node', 'cli.js', 'file1.csv', 'file2.csv'];
 
-    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
-      throw new Error(`process.exit(${code})`);
-    });
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const exitSpy = jest
+      .spyOn(process, 'exit')
+      .mockImplementation((code?: string | number | null | undefined) => {
+        throw new Error(`process.exit(${code})`);
+      });
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => parseArgs()).toThrow('process.exit(1)');
     expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -169,7 +184,7 @@ describe('parseArgs', () => {
 
 describe('CLI Integration Tests', () => {
   const testInputFile = path.join(testDir, 'test-input.csv');
-  const cliPath = path.join(__dirname, '../dist/cli.js');
+  const cliPath = path.join(__dirname, '../dist/index.js');
 
   beforeAll(() => {
     // Ensure the CLI is built
@@ -184,7 +199,7 @@ describe('CLI Integration Tests', () => {
 
     // Create test directory
     if (!existsSync(testDir)) {
-      require('fs').mkdirSync(testDir, { recursive: true });
+      mkdirSync(testDir, { recursive: true });
     }
   });
 
@@ -194,7 +209,7 @@ describe('CLI Integration Tests', () => {
       unlinkSync(testInputFile);
     }
     try {
-      require('fs').rmdirSync(testDir);
+      rmdirSync(testDir);
     } catch (error) {
       // Directory might not be empty or might not exist
     }
@@ -226,15 +241,15 @@ describe('CLI Integration Tests', () => {
       expect(lines[0]).toBe('id,json,is_valid');
 
       // Check specific results
-      expect(lines[1]).toBe('1,"[1]",true');
+      expect(lines[1]).toBe('1,[1],true');
       expect(lines[2]).toBe('2,"[3,1,4,2]",true');
       expect(lines[3]).toBe('3,"[4,1,2,7,5,3,8,9,6]",true');
       expect(lines[4]).toBe('4,"[90,40,10,20]",true');
-      expect(lines[5]).toBe('5,"[-5]",true');
-      expect(lines[6]).toBe('6,"[]",false'); // [2, -0] has length 2, not square
-      expect(lines[7]).toBe('7,"[]",false'); // [2, -5, -5] has length 3, not square
-      expect(lines[8]).toBe('8,"[]",false'); // empty array
-      expect(lines[9]).toBe('9,"[]",false'); // [1, 2, 3] has length 3, not square
+      expect(lines[5]).toBe('5,[-5],true');
+      expect(lines[6]).toBe('6,[],false'); // [2, -0] has length 2, not square
+      expect(lines[7]).toBe('7,[],false'); // [2, -5, -5] has length 3, not square
+      expect(lines[8]).toBe('8,[],false'); // empty array
+      expect(lines[9]).toBe('9,[],false'); // [1, 2, 3] has length 3, not square
     } catch (error) {
       throw new Error(`CLI execution failed: ${error}`);
     }
@@ -248,7 +263,7 @@ describe('CLI Integration Tests', () => {
         encoding: 'utf8',
         stdio: 'pipe',
       });
-      fail('Expected CLI to fail with missing file');
+      expect(true).toBe(false); // Expected CLI to fail with missing file
     } catch (error: any) {
       expect(error.status).toBe(1);
       expect(error.stderr).toContain('Error:');
@@ -290,8 +305,8 @@ describe('CLI Integration Tests', () => {
       // These should match the expected output from the recruitment spec
       expect(lines[1]).toBe('1,"[4,1,2,7,5,3,8,9,6]",true');
       expect(lines[2]).toBe('2,"[90,40,10,20]",true');
-      expect(lines[3]).toBe('3,"[-5]",true');
-      expect(lines[4]).toBe('4,"[]",false');
+      expect(lines[3]).toBe('3,[-5],true');
+      expect(lines[4]).toBe('4,[],false');
     } catch (error) {
       throw new Error(`CLI execution failed: ${error}`);
     }

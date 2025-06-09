@@ -8,6 +8,7 @@
  */
 
 import { createReadStream } from 'fs';
+import csvStream from 'csv-stream';
 import * as fastCsv from 'fast-csv';
 import { rotateRight, squareLen, validateNumberArray } from './rotation.js';
 
@@ -145,46 +146,54 @@ async function processFile(inputFile: string): Promise<void> {
     delimiter: ',',
     quote: '"',
     escape: '"',
+    // quoteColumns: { json: true }, // Force quoting json column
   });
 
   // Pipe output to stdout
   outputStream.pipe(process.stdout);
 
-  // Create input stream with fast-csv for parsing
-  const inputStream = createReadStream(inputFile).pipe(
-    fastCsv.parse({
-      headers: true,
-      delimiter: ',',
-      quote: '"',
-      escape: '"',
-    })
-  );
+  // Create csv stream
+  const inputStream = csvStream.createStream({
+    delimiter: ',',
+    endLine: '\n',
+    escapeChar: '"',
+    enclosedChar: '"',
+    columns: ['id', 'json'],
+  });
 
-  // Process each row
-  inputStream.on('data', (row: Record<string, string>) => {
+  // Pipe file to csv parser
+  createReadStream(inputFile).pipe(inputStream);
+
+  // Process each row (csv-stream provides objects with column names)
+  inputStream.on('data', (row: { id: string; json: string }) => {
     try {
+      // Skip header row if it exists
+      if (row.id === 'id' && row.json === 'json') {
+        return;
+      }
+
       // Ensure we have both required fields
-      if (!row['id'] || row['json'] === undefined) {
+      if (!row.id || row.json === undefined) {
         console.error('Warning: Skipping row with missing fields');
         return;
       }
 
       // Process the JSON and determine validity
-      const { json, isValid } = processJsonArray(row['json']);
+      const { json, isValid } = processJsonArray(row.json);
 
       // Write output row
       const outputRow: OutputRow = {
-        id: row['id'],
+        id: row.id,
         json: json,
         is_valid: isValid ? 'true' : 'false',
       };
 
       outputStream.write(outputRow);
     } catch (error) {
-      console.error(`Warning: Error processing row with id ${row['id'] || 'unknown'}:`, error);
+      console.error(`Warning: Error processing row with id ${row.id || 'unknown'}:`, error);
       // Write invalid row
       const outputRow: OutputRow = {
-        id: row['id'] || 'unknown',
+        id: row.id || 'unknown',
         json: '[]',
         is_valid: 'false',
       };
@@ -213,3 +222,16 @@ async function processFile(inputFile: string): Promise<void> {
 }
 
 export { main, processJsonArray, parseArgs };
+
+// Auto-run main if this file is executed directly (skip in test environment)
+if (process.env['NODE_ENV'] !== 'test' && !process.env['JEST_WORKER_ID']) {
+  try {
+    // Check if this file is being run directly
+    const isMainModule = process.argv[1] && process.argv[1].endsWith('cli.js');
+    if (isMainModule) {
+      main().catch(console.error);
+    }
+  } catch (error) {
+    // Silently ignore errors in module detection (for Jest compatibility)
+  }
+}
