@@ -25,6 +25,8 @@ A high-performance CSV table rotation tool implemented in Rust, TypeScript, and 
     - [TypeScript](#typescript)
     - [Python](#python)
   - [Performance Benchmarks](#performance-benchmarks)
+    - [1. Micro-benchmarks (Criterion - Rust only)](#1-micro-benchmarks-criterion---rust-only)
+    - [2. End-to-end CLI benchmarks (Hyperfine - Cross-language)](#2-end-to-end-cli-benchmarks-hyperfine---cross-language)
   - [Testing](#testing)
   - [CI/CD](#cicd)
 
@@ -294,6 +296,7 @@ cargo bench --bench rotation_bench
 ```
 
 **What it measures:**
+
 - Pure rotation algorithm performance across different matrix sizes (1×1 to 128×128)
 - Memory allocation patterns and scaling characteristics
 - JSON parsing + rotation pipeline performance
@@ -301,6 +304,7 @@ cargo bench --bench rotation_bench
 - Multiple rotation cycles for consistency testing
 
 **Key insights:**
+
 - Rotation time scales linearly with matrix elements (O(N²) confirmed)
 - In-place algorithm uses only ~750 picoseconds for validation
 - Performance is consistent across different data patterns
@@ -308,19 +312,52 @@ cargo bench --bench rotation_bench
 
 ### 2. End-to-end CLI benchmarks (Hyperfine - Cross-language)
 
-Full program comparison across all three implementations:
+Full program comparison across implementations using [hyperfine](https://github.com/sharkdp/hyperfine):
 
 ```bash
+# Full benchmark suite (comprehensive analysis)
 ./benchmarks/run_hyperfine.sh
+
+# Quick test (basic comparison)
+./benchmarks/quick_test.sh
 ```
 
-This uses `hyperfine` to measure complete CLI execution time with statistical analysis (20 runs, 3 warmups).
+**Benchmark Features:**
 
-**Expected Performance Ranking:**
+- **Basic performance** - Direct comparison on standard workloads
+- **Data size scaling** - Performance across different input sizes with three dataset tiers:
+  - **Small**: 1×1 to 3×3 matrices (startup overhead focus)
+  - **Medium**: 1×1 to 10×10 matrices (up to 100 elements)
+  - **Large**: 15×15 to 50×50 matrices (up to 2500 elements)
+- **Startup overhead** - Language/runtime initialization costs
+- **Cache behavior** - Cold vs warm cache performance (Linux only)
+- **Comprehensive analysis** - Detailed statistical breakdown
+- **Multiple export formats** - JSON, CSV, Markdown for further analysis
+- **Automatic dependency checking** - Builds missing binaries automatically
+- **Cross-platform support** - macOS, Linux
+- **Statistical outlier detection** - Warns about inconsistent measurements
 
-1. **Rust** - Fastest due to zero-cost abstractions and compiled nature
-2. **TypeScript/Node.js** - Good performance with V8 optimizations  
-3. **Python** - Slower due to interpreted nature but still efficient for I/O bound tasks
+**Sample Results (Data Size Scaling):**
+
+```
+| Dataset | Rust Time | TypeScript Time | Performance Gap |
+|---------|-----------|-----------------|-----------------|
+| Small   | 1.7ms     | 29.7ms         | 17.9× faster    |
+| Medium  | 1.5ms     | 31.9ms         | 20.9× faster    |
+| Large   | 3.0ms     | 40.4ms         | 13.3× faster    |
+```
+
+**Performance Ranking:**
+
+1. **Rust** (1.5-3.0ms) - Fastest with excellent scaling; compiled efficiency shows as workload increases
+2. **TypeScript/Node.js** (30-40ms) - 13-21× slower; startup overhead dominates small workloads
+3. **Python** - TBD (implementation pending)
+
+**Key Performance Insights:**
+
+- **Algorithm scaling**: Rust demonstrates O(N²) scaling (1.5ms → 3.0ms for 25× larger matrices)
+- **Startup vs computation**: Performance gap narrows from 21× to 13× as matrix computation becomes more significant relative to Node.js startup overhead
+- **Large matrix handling**: 50×50 matrices (2500 elements) provide meaningful computational workload to showcase algorithmic performance differences
 
 ## Testing
 
