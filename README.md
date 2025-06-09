@@ -58,7 +58,7 @@ Imagine coding in multiple languages at full productivity - with the flu - comfo
     - [Go](#go)
     - [TypeScript](#typescript)
     - [Python](#python)
-  - [Performance Benchmarks](#performance-benchmarks)
+  - [🏎️ Performance Benchmarks](#️-performance-benchmarks)
     - [1. Micro-benchmarks (Algorithm-level performance)](#1-micro-benchmarks-algorithm-level-performance)
     - [2. End-to-end CLI benchmarks (Hyperfine - Cross-language)](#2-end-to-end-cli-benchmarks-hyperfine---cross-language)
   - [🤖 AI Tools Comparison](#-ai-tools-comparison)
@@ -370,7 +370,7 @@ mypy rotate_cli/  # Type checking
 - PEP 621 compliant project structure (no requirements.txt needed)
 - Virtual environment support for dependency isolation
 
-## Performance Benchmarks
+## 🏎️ Performance Benchmarks
 
 We provide two complementary types of benchmarks:
 
