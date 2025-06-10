@@ -25,7 +25,7 @@ Imagine coding in multiple languages at full productivity - with the flu - comfo
 - **Go excellent startup** - Only 28% slower than Rust for small tasks
 - **Python consistency** - Steady ~12× gap, efficient interpreter
 - **TypeScript struggles** - V8 startup overhead dominates small workloads
-- **Algorithm-level performance** - Go is 2.3-2.6× slower than Rust in [micro-benchmarks](#1-micro-benchmarks-algorithm-level-performance) (pure rotation algorithm)
+- **Algorithm-level performance** - Go is 2.5× slower than Rust in [micro-benchmarks](#1-micro-benchmarks-algorithm-level-performance) (pure rotation)
 
 **Roadmap:**
 
@@ -187,8 +187,8 @@ Think of the square matrix as nested "onion skins" or concentric rings:
 21 22 23 24 25      A  A  A  A  A
 ```
 
-- **Ring A** = outer perimeter (20 elements)
-- **Ring B** = inner frame (12 elements)
+- **Ring A** = outer perimeter (16 elements)
+- **Ring B** = inner frame (8 elements)
 - **Ring C** = center cell (1 element, never moves in odd-sized grids)
 
 ### Rotation Process
