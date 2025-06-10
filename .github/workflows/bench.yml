@@ -3,8 +3,20 @@ name: Performance Benchmarks
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".editorconfig"
+      - ".vscode/**"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".editorconfig"
+      - ".vscode/**"
   schedule:
     # Run benchmarks weekly on Sunday at 02:00 UTC to detect performance regressions
     - cron: "0 2 * * 0"
