@@ -63,7 +63,7 @@ Imagine coding in multiple languages at full productivity - with the flu - comfo
     - [2. End-to-end CLI benchmarks (Hyperfine - Cross-language)](#2-end-to-end-cli-benchmarks-hyperfine---cross-language)
   - [🤖 AI Tools Comparison](#-ai-tools-comparison)
     - [Tools Used](#tools-used)
-      - [1. **macOS ChatGPT App with o3** + Search + "Work with Apps" (Cursor access)](#1-macos-chatgpt-app-with-o3--search--work-with-apps-cursor-access)
+      - [1. **ChatGPT App with o3** + Search + "Work with Apps" (Cursor access on macOS)](#1-chatgpt-app-with-o3--search--work-with-apps-cursor-access-on-macos)
       - [2. **Zed Editor** (Rust-based, fast but unstable)](#2-zed-editor-rust-based-fast-but-unstable)
       - [3. **Cursor** (Primary development environment)](#3-cursor-primary-development-environment)
     - [Cost Analysis](#cost-analysis)
@@ -181,7 +181,7 @@ Think of the square matrix as nested "onion skins" or concentric rings:
 ```
 5×5 grid:           Rings labeled:
 1  2  3  4  5       A  A  A  A  A
-6  7  8  9 10       A  B  B  B  A
+6  7  8  9  10      A  B  B  B  A
 11 12 13 14 15  →   A  B  C  B  A
 16 17 18 19 20      A  B  B  B  A
 21 22 23 24 25      A  A  A  A  A
@@ -308,7 +308,7 @@ go test -bench=BenchmarkRotationSizes ./internal/rotate # Specific benchmark
 - Comprehensive error handling with custom error types
 - Zero third-party dependencies (stdlib only)
 - CLI integration tests with temporary file handling
-- Built-in benchmarking with testing.B
+- Built-in benchmarking with `testing.B`
 
 ### TypeScript
 
@@ -316,16 +316,16 @@ go test -bench=BenchmarkRotationSizes ./internal/rotate # Specific benchmark
 
 ```bash
 cd typescript
-pnpm install
-pnpm build
+npm install
+npm run build
 node dist/cli.js ../input-samples/sample-1k.csv > output-typescript.csv
 ```
 
 **Test:**
 
 ```bash
-pnpm test
-pnpm lint
+npm test
+npm lint
 ```
 
 **Features:**
@@ -426,7 +426,7 @@ go test -bench=. -run=^$ ./internal/rotate  # Benchmarks only (excludes unit tes
 
 ### 2. End-to-end CLI benchmarks (Hyperfine - Cross-language)
 
-Full program comparison across implementations using [hyperfine](https://github.com/sharkdp/hyperfine):
+Full program performance comparison across implementations using [hyperfine](https://github.com/sharkdp/hyperfine) (Rust based CLI testing tool):
 
 ```bash
 # Full benchmark suite (comprehensive analysis)
@@ -500,11 +500,11 @@ pip install -e ".[dev]"
 
 ## 🤖 AI Tools Comparison
 
-This repository was built using various AI-powered development tools to demonstrate their capabilities in cross-language development. Fully coded in my **Viture Pro XR Glasses** during two days while I had the flu and stayed in bed.
+This repository was built using various AI-powered development tools to demonstrate their capabilities in cross-language development. Fully coded in my **Viture Pro XR Glasses** during two days while I had the flu and stayed in bed. The power of Tech! :)
 
 ### Tools Used
 
-#### 1. **macOS ChatGPT App with o3** + Search + "Work with Apps" (Cursor access)
+#### 1. **ChatGPT App with o3** + Search + "Work with Apps" (Cursor access on macOS)
 
 - **Usage**: Research, ideation, best practices, and planning
 - **Strengths**: Excellent for high-level architecture and research
@@ -520,11 +520,12 @@ This repository was built using various AI-powered development tools to demonstr
   - Privacy and local model support
   - It's OPEN SOURCE, so you can see the code and contribute!
 - **Issues Encountered**:
-  - 1 crash without explanation (just restart)
+  - 1 crash without explanation (just restart & Apple debug report prompt)
   - Auth error lockout (couldn't log back in, "Sign in" button unresponsive)
   - Line-based diff (vs Cursor's character-level diff)
   - Not possible to select and add to chat context (like Cursor's "Add to chat" button)
   - ChatGPT macOS App doesn't support "Work with Apps" for Zed (it does for Cursor)
+  - Less precise Rules targeting (Cursor allows advanced pattern matching in mdc files)
 - **Efficiency**: Used all 150 free trial prompts for just Rust + partial TS implementation
 - **Result**: Promising but not production-ready IMHO
 
@@ -543,15 +544,15 @@ This repository was built using various AI-powered development tools to demonstr
 
 Both tools offer **$20/month for ~500 requests/prompts**, but:
 
-- **Cursor**: 500 requests = substantial work (this project used ~50 for most implementations)
-- **Zed**: 500 prompts = less work (150 prompts only completed Rust + partial TS)
+- **Cursor**: 500 requests = substantial work (this project used ~50 requests for 80% of the work)
+- **Zed**: 500 prompts = less work (150 prompts only completed Rust + partial TS = 20% of the work)
 - **Claude Sonnet 4**: Currently uses 0.75 request weight in Cursor
 
 ### Key Takeaways
 
 1. **Cursor wins for productivity** - More stable, mature, better diff visualization, efficient request usage
 2. **Zed shows promise** - Speed and privacy features are compelling, but needs stability improvements. I love Open Source so will watch it's development and it stays installed on my machine.
-3. **AI tool pricing varies significantly** in actual value delivered per dollar
+3. **AI tool pricing varies significantly** in actual value delivered per dollar (I was expecting to finish full project with Zed trial, but 150 prompts were not enough even for 2 languages, at least not in "Burn Mode")
 4. **Claude Sonnet 4** replaced Gemini 2.5 Pro as my preferred model for code generation (produces much smaller diff, is more precise in changes, follows instructions better, etc.)
 
 ## Development Setup
