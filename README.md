@@ -3,9 +3,12 @@
 [![CI](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/ci.yml)
 [![Benchmarks](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/bench.yml/badge.svg)](https://github.com/LucasMatuszewski/csv-table-rotation-benchmark/actions/workflows/bench.yml)
 
-## 🚀 TL;DR - Performance Results
+## 🚀 TL;DR - Performance Results & Motivation
 
-A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeScript, and Python** using identical algorithms. [See full benchmarks](#performance-benchmarks). Built with AI assistance (see [Zed vs Cursor comparison](#-ai-tools-comparison)) to demonstrate cross-language performance characteristics.
+A high-performance CSV Table Rotation CLI tool implemented in **Rust, Go, TypeScript, and Python** using an identical [algorithm](#algorithm-explanation). Built with **hyperfine** for cross-language performance benchmarking to demonstrate each language's real-world strengths and trade-offs (see [full benchmarks](#performance-benchmarks)).
+
+**Why this project?**
+Imagine coding in multiple languages at full productivity - with the flu - comfortably nestled in your bed, powered by **XR Glasses**, and assisted by the latest **Claude 4 Sonnet** inside cutting-edge AI tools (see [Zed vs Cursor comparison](#-ai-tools-comparison)). This unique scenario inspired the creation of this repository. What a time to be alive!
 
 **🏆 Benchmark Results (Comprehensive Dataset):**
 
@@ -16,7 +19,7 @@ A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeS
 | 🐍 **Python**     | 17.0ms        | 17.7ms         | 35.8ms        | 16.6ms       | 🥉 **3rd** - Solid         |
 | 📜 **TypeScript** | 32.0ms        | 34.0ms         | 42.7ms        | 29.0ms       | **4th** - Node.js overhead |
 
-**Key Insights:**
+**Benchmark Insights:**
 
 - **Rust wins overall** - Zero-cost abstractions and compiled efficiency
 - **Go excellent startup** - Only 28% slower than Rust for small tasks
@@ -24,12 +27,17 @@ A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeS
 - **TypeScript struggles** - V8 startup overhead dominates small workloads
 - **Algorithm-level performance** - Go is 2.3-2.6× slower than Rust in [micro-benchmarks](#1-micro-benchmarks-algorithm-level-performance) (pure rotation algorithm)
 
+**Roadmap:**
+
+- [ ] Add Bun vs Deno vs Node.js benchmarks
+- [ ] Add Swift implementation and benchmarks
+
 ---
 
 ## Table of Contents
 
 - [Table Rotation CLI - Polyglot Implementation](#table-rotation-cli---polyglot-implementation)
-  - [🚀 TL;DR - Performance Results](#-tldr---performance-results)
+  - [🚀 TL;DR - Performance Results \& Motivation](#-tldr---performance-results--motivation)
   - [Table of Contents](#table-of-contents)
   - [Problem Statement](#problem-statement)
   - [How it works](#how-it-works)
@@ -38,7 +46,7 @@ A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeS
     - [Table Interpretation](#table-interpretation)
     - [Clockwise Rotation (One-Step Shift)](#clockwise-rotation-one-step-shift)
     - [Input \& Output CSV data Example](#input--output-csv-data-example)
-  - [Algorithm Explanation](#algorithm-explanation)
+  - [Algorithm - Deep Dive](#algorithm---deep-dive)
     - [Concentric Rings Concept](#concentric-rings-concept)
     - [Rotation Process](#rotation-process)
     - [Complexity Analysis](#complexity-analysis)
@@ -50,7 +58,7 @@ A high-performance CSV table rotation CLI tools implemented in **Rust, Go, TypeS
     - [Go](#go)
     - [TypeScript](#typescript)
     - [Python](#python)
-  - [Performance Benchmarks](#performance-benchmarks)
+  - [🏎️ Performance Benchmarks](#️-performance-benchmarks)
     - [1. Micro-benchmarks (Algorithm-level performance)](#1-micro-benchmarks-algorithm-level-performance)
     - [2. End-to-end CLI benchmarks (Hyperfine - Cross-language)](#2-end-to-end-cli-benchmarks-hyperfine---cross-language)
   - [🤖 AI Tools Comparison](#-ai-tools-comparison)
@@ -164,7 +172,7 @@ id,json,is_valid
 4,"[]",false
 ```
 
-## Algorithm Explanation
+## Algorithm - Deep Dive
 
 ### Concentric Rings Concept
 
@@ -362,7 +370,7 @@ mypy rotate_cli/  # Type checking
 - PEP 621 compliant project structure (no requirements.txt needed)
 - Virtual environment support for dependency isolation
 
-## Performance Benchmarks
+## 🏎️ Performance Benchmarks
 
 We provide two complementary types of benchmarks:
 
@@ -492,7 +500,7 @@ pip install -e ".[dev]"
 
 ## 🤖 AI Tools Comparison
 
-This repository was built using various AI-powered development tools to demonstrate their capabilities in cross-language development. Fully codded in my **Viture Pro XR Glasses** during 2 days I get flu and stayed in bed ;)
+This repository was built using various AI-powered development tools to demonstrate their capabilities in cross-language development. Fully coded in my **Viture Pro XR Glasses** during two days while I had the flu and stayed in bed.
 
 ### Tools Used
 
