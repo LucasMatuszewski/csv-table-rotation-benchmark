@@ -297,71 +297,31 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // Find the latest comprehensive comparison file
+            // Find the latest comprehensive comparison MD file
             const resultsDir = 'benchmark-results';
             const files = fs.readdirSync(resultsDir);
-            const compFile = files.find(f => f.startsWith('comprehensive_comparison_'));
+            const compFile = files.find(f => f.startsWith('comprehensive_comparison_') && f.endsWith('.md'));
 
             if (compFile) {
-              const content = fs.readFileSync(path.join(resultsDir, compFile), 'utf8');
-              
-              console.log('File content debug:');
-              console.log('---');
-              console.log(content);
-              console.log('---');
-              
-              // Build the comment with the raw table content
-              let comment = `## 🚀 Performance Benchmark Results\n\n`;
-              comment += `Commit: \`${{ github.sha }}\`\n\n`;
-              
-              // Since the file is small and mostly just the table, include it directly
-              if (content.trim()) {
-                comment += `### Performance Comparison\n\n`;
-                comment += content.trim() + '\n\n';
-                
-                // Extract key metrics for summary
-                const lines = content.split('\n');
-                const rustLine = lines.find(line => line.includes('🦀 Rust Implementation'));
-                const goLine = lines.find(line => line.includes('🐹 Go Implementation'));
-                const tsLine = lines.find(line => line.includes('📜 TypeScript Implementation'));
-                const pythonLine = lines.find(line => line.includes('🐍 Python Implementation'));
-                
-                if (rustLine && goLine && tsLine && pythonLine) {
-                  comment += `### Quick Summary\n\n`;
-                  
-                  // Extract times (simplified - just grab the first number after the pipe)
-                  const extractTime = (line) => {
-                    const match = line.match(/\|\s*(\d+\.?\d*)\s*[±]?\s*[\d.]*\s*\|/);
-                    return match ? parseFloat(match[1]) : 0;
-                  };
-                  
-                  const rustTime = extractTime(rustLine);
-                  const goTime = extractTime(goLine);
-                  const tsTime = extractTime(tsLine);
-                  const pythonTime = extractTime(pythonLine);
-                  
-                  if (rustTime > 0) {
-                    comment += `- 🦀 **Rust**: ${rustTime}ms (baseline)\n`;
-                    if (goTime > 0) comment += `- 🐹 **Go**: ${goTime}ms (${(goTime/rustTime).toFixed(1)}× slower)\n`;
-                    if (pythonTime > 0) comment += `- 🐍 **Python**: ${pythonTime}ms (${(pythonTime/rustTime).toFixed(1)}× slower)\n`;
-                    if (tsTime > 0) comment += `- 📜 **TypeScript**: ${tsTime}ms (${(tsTime/rustTime).toFixed(1)}× slower)\n`;
-                    comment += '\n';
-                  }
-                }
+              const tableContent = fs.readFileSync(path.join(resultsDir, compFile), 'utf8');
+
+              if (tableContent.trim()) {
+                let comment = `## 🚀 Performance Benchmark Results\n\n`;
+                comment += `Commit: \`${{ github.sha }}\`\n\n`;
+                comment += '### Performance Comparison\n\n';
+                comment += tableContent;
+                comment += `\n\n📊 **[View Full Benchmark Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**`;
+
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
               } else {
-                comment += `⚠️ No benchmark data found in results file.\n\n`;
+                console.log('Benchmark markdown file was found, but it is empty.');
               }
-              
-              comment += `📊 **[View Full Benchmark Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**\n\n`;
-              comment += `> *Benchmarks run on: \`${{ runner.os }}\` • Generated: ${new Date().toISOString().split('T')[0]}*`;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
             } else {
-              console.log('No comprehensive comparison file found');
-              console.log('Available files:', fs.readdirSync(resultsDir));
+              console.log('No comprehensive comparison markdown file found in benchmark-results.');
+              console.log('Available files:', files);
             }
