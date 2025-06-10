@@ -57,10 +57,19 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Cache hyperfine
+        id: cache-hyperfine
+        uses: actions/cache@v4
+        with:
+          # Cache the hyperfine binary itself
+          path: ~/.cargo/bin/hyperfine
+          # Key is based on runner OS and a fixed version for stability
+          key: ${{ runner.os }}-hyperfine-1.19.0
+
       - name: Install hyperfine
-        run: |
-          # Install hyperfine using cargo (most reliable method)
-          cargo install hyperfine --locked
+        # Install hyperfine using cargo if the cache was not restored
+        if: steps.cache-hyperfine.outputs.cache-hit != 'true'
+        run: cargo install hyperfine --version 1.19.0 --locked
 
       # Cache dependencies
       - name: Cache Rust dependencies
