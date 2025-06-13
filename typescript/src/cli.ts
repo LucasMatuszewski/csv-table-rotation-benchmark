@@ -7,10 +7,14 @@
  * shifting each element one position clockwise around its ring.
  */
 
-import { createReadStream } from 'fs';
 import csvStream from 'csv-stream';
 import * as fastCsv from 'fast-csv';
+import { createReadStream } from 'fs';
+import Papa from 'papaparse';
 import { rotateRight, squareLen, validateNumberArray } from './rotation.js';
+
+// CSV library selection via environment variable
+const CSV_LIBRARY = process.env['CSV_LIBRARY'] || 'default';
 
 /**
  * CLI configuration and argument parsing.
@@ -136,9 +140,88 @@ async function main(): Promise<void> {
 }
 
 /**
- * Process the input CSV file and stream results to stdout.
+ * Process the input CSV file using PapaParse and stream results to stdout.
  */
-async function processFile(inputFile: string): Promise<void> {
+async function processFilePapaParse(inputFile: string): Promise<void> {
+  // Create readable stream for PapaParse
+  const inputStream = createReadStream(inputFile);
+
+  // Write header immediately
+  process.stdout.write('id,json,is_valid\n');
+
+  return new Promise<void>((resolve, reject) => {
+    // Use Papa.parse with Node.js streaming approach
+    const parseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
+      header: true,
+      skipEmptyLines: true,
+      fastMode: false, // Explicitly disable fast mode since we have quoted data
+    });
+
+    // Handle parsed data
+    parseStream.on('data', (row: { id: string; json: string }) => {
+      try {
+        // Ensure we have both required fields
+        if (!row.id || row.json === undefined) {
+          console.error('Warning: Skipping row with missing fields');
+          return;
+        }
+
+        // Process the JSON and determine validity
+        const { json, isValid } = processJsonArray(row.json);
+
+        // Create output row
+        const outputRow: OutputRow = {
+          id: row.id,
+          json: json,
+          is_valid: isValid ? 'true' : 'false',
+        };
+
+        // Write row immediately using PapaParse unparse
+        const csvLine = Papa.unparse([outputRow], {
+          header: false,
+          quotes: true,
+          delimiter: ',',
+          newline: '\n',
+        });
+
+        process.stdout.write(csvLine + '\n');
+      } catch (error) {
+        console.error(`Warning: Error processing row with id ${row.id || 'unknown'}:`, error);
+        // Write invalid row
+        const outputRow: OutputRow = {
+          id: row.id || 'unknown',
+          json: '[]',
+          is_valid: 'false',
+        };
+
+        const csvLine = Papa.unparse([outputRow], {
+          header: false,
+          quotes: true,
+          delimiter: ',',
+          newline: '\n',
+        });
+
+        process.stdout.write(csvLine + '\n');
+      }
+    });
+
+    parseStream.on('end', () => {
+      resolve();
+    });
+
+    parseStream.on('error', (error: Error) => {
+      reject(new Error(`Failed to parse CSV: ${error.message}`));
+    });
+
+    // Pipe input stream to parser
+    inputStream.pipe(parseStream);
+  });
+}
+
+/**
+ * Process the input CSV file using csv-stream and stream results to stdout.
+ */
+async function processFileDefault(inputFile: string): Promise<void> {
   // Create output stream with fast-csv
   const outputStream = fastCsv.format({
     headers: ['id', 'json', 'is_valid'],
@@ -222,7 +305,19 @@ async function processFile(inputFile: string): Promise<void> {
   });
 }
 
-export { main, processJsonArray, parseArgs };
+/**
+ * Process the input CSV file and stream results to stdout.
+ */
+async function processFile(inputFile: string): Promise<void> {
+  switch (CSV_LIBRARY) {
+    case 'papaparse':
+      return processFilePapaParse(inputFile);
+    default:
+      return processFileDefault(inputFile);
+  }
+}
+
+export { main, parseArgs, processJsonArray };
 
 // Auto-run main if this file is executed directly (skip in test environment)
 if (process.env['NODE_ENV'] !== 'test' && !process.env['JEST_WORKER_ID']) {
