@@ -42,20 +42,25 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "stable"
           cache-dependency-path: go/go.sum
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "lts/*"
           cache: "npm"
           cache-dependency-path: typescript/package-lock.json
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.x"
 
       - name: Cache hyperfine
         id: cache-hyperfine
@@ -147,6 +152,14 @@ jobs:
           echo "Runner: ${{ runner.os }}" >> benchmark-results/benchmark-info.txt
           echo "Commit: ${{ github.sha }}" >> benchmark-results/benchmark-info.txt
           echo "Ref: ${{ github.ref }}" >> benchmark-results/benchmark-info.txt
+          echo "" >> benchmark-results/benchmark-info.txt
+          echo "=== Language/Runtime Versions ===" >> benchmark-results/benchmark-info.txt
+          echo "Rust: $(rustc --version)" >> benchmark-results/benchmark-info.txt
+          echo "Go: $(go version)" >> benchmark-results/benchmark-info.txt
+          echo "Node.js: $(node --version)" >> benchmark-results/benchmark-info.txt
+          echo "Bun: $(bun --version)" >> benchmark-results/benchmark-info.txt
+          echo "Python: $(python --version)" >> benchmark-results/benchmark-info.txt
+          echo "Hyperfine: $(hyperfine --version)" >> benchmark-results/benchmark-info.txt
 
       # Run comprehensive benchmarks
       - name: Run comprehensive benchmarks
@@ -154,9 +167,9 @@ jobs:
           # Make script executable
           chmod +x ./benchmarks/run_hyperfine.sh
 
-          # Run benchmarks with timestamp
+          # Run benchmarks with timestamp - disable cleanup so we can copy results
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          if ! ./benchmarks/run_hyperfine.sh 2>&1 | tee benchmark-results/benchmark-log-${TIMESTAMP}.txt; then
+          if ! DISABLE_CLEANUP=true ./benchmarks/run_hyperfine.sh 2>&1 | tee benchmark-results/benchmark-log-${TIMESTAMP}.txt; then
             echo "⚠️ Benchmark script encountered issues, but continuing with available results..."
             echo "script-failed=true" >> $GITHUB_OUTPUT
           fi
@@ -164,6 +177,15 @@ jobs:
           # Copy all generated results
           if [ -d "./benchmarks/results" ]; then
             cp -r ./benchmarks/results/* benchmark-results/ || true
+            echo "✅ Results copied from ./benchmarks/results/ to benchmark-results/"
+          fi
+
+          # Now clean up the original results directory to keep CI clean
+          if [ -d "./benchmarks/results" ]; then
+            find ./benchmarks/results -name "*.md" -delete 2>/dev/null || true
+            find ./benchmarks/results -name "*.json" -delete 2>/dev/null || true
+            find ./benchmarks/results -name "*.csv" -delete 2>/dev/null || true
+            echo "✅ Original benchmark results cleaned up"
           fi
 
           # Debug: List what files were actually generated
@@ -193,25 +215,28 @@ jobs:
             head -20 "$LATEST_RESULT"
             echo "--- End preview ---"
             
-            # Extract timing data (simple regex extraction)
+            # Extract timing data (simple regex extraction) from xlarge dataset results
             RUST_TIME=$(grep "🦀 Rust Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
             GO_TIME=$(grep "🐹 Go Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
             PYTHON_TIME=$(grep "🐍 Python Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
-            TS_TIME=$(grep "📜 TypeScript Implementation" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
+            NODE_PAPAPARSE_TIME=$(grep "🟢 Node+PapaParse" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
+            BUN_PAPAPARSE_TIME=$(grep "🔥 Bun+PapaParse" "$LATEST_RESULT" | grep -oP '\d+\.\d+' | head -1)
             
-            echo "Performance Results:"
+            echo "Performance Results (xlarge dataset):"
             echo "Rust: ${RUST_TIME}ms"
             echo "Go: ${GO_TIME}ms"
             echo "Python: ${PYTHON_TIME}ms" 
-            echo "TypeScript: ${TS_TIME}ms"
+            echo "Node+PapaParse: ${NODE_PAPAPARSE_TIME}ms"
+            echo "Bun+PapaParse: ${BUN_PAPAPARSE_TIME}ms"
             
             # Only check regressions if we have valid data
-            if [ -n "$RUST_TIME" ] && [ -n "$GO_TIME" ] && [ -n "$PYTHON_TIME" ] && [ -n "$TS_TIME" ]; then
-              # Basic regression thresholds (in milliseconds)
-              RUST_THRESHOLD=10.0
-              GO_THRESHOLD=25.0
-              PYTHON_THRESHOLD=100.0
-              TS_THRESHOLD=100.0
+            if [ -n "$RUST_TIME" ] && [ -n "$GO_TIME" ] && [ -n "$PYTHON_TIME" ] && [ -n "$NODE_PAPAPARSE_TIME" ]; then
+              # Updated regression thresholds for xlarge dataset (in milliseconds)
+              RUST_THRESHOLD=50.0
+              GO_THRESHOLD=250.0
+              PYTHON_THRESHOLD=600.0
+              NODE_PAPAPARSE_THRESHOLD=120.0
+              BUN_PAPAPARSE_THRESHOLD=100.0
               
               # Check for performance regressions
               if (( $(echo "$RUST_TIME > $RUST_THRESHOLD" | bc -l) )); then
@@ -229,16 +254,24 @@ jobs:
                 echo "python-regression=true" >> $GITHUB_OUTPUT
               fi
               
-              if (( $(echo "$TS_TIME > $TS_THRESHOLD" | bc -l) )); then
-                echo "⚠️ Potential TypeScript performance regression: ${TS_TIME}ms > ${TS_THRESHOLD}ms"
-                echo "ts-regression=true" >> $GITHUB_OUTPUT
+              if (( $(echo "$NODE_PAPAPARSE_TIME > $NODE_PAPAPARSE_THRESHOLD" | bc -l) )); then
+                echo "⚠️ Potential Node+PapaParse performance regression: ${NODE_PAPAPARSE_TIME}ms > ${NODE_PAPAPARSE_THRESHOLD}ms"
+                echo "node-papaparse-regression=true" >> $GITHUB_OUTPUT
+              fi
+              
+              if [ -n "$BUN_PAPAPARSE_TIME" ] && (( $(echo "$BUN_PAPAPARSE_TIME > $BUN_PAPAPARSE_THRESHOLD" | bc -l) )); then
+                echo "⚠️ Potential Bun+PapaParse performance regression: ${BUN_PAPAPARSE_TIME}ms > ${BUN_PAPAPARSE_THRESHOLD}ms"
+                echo "bun-papaparse-regression=true" >> $GITHUB_OUTPUT
               fi
               
               # Save metrics for artifact
               echo "rust_time_ms=$RUST_TIME" > benchmark-results/performance-metrics.txt
               echo "go_time_ms=$GO_TIME" >> benchmark-results/performance-metrics.txt
               echo "python_time_ms=$PYTHON_TIME" >> benchmark-results/performance-metrics.txt
-              echo "typescript_time_ms=$TS_TIME" >> benchmark-results/performance-metrics.txt
+              echo "node_papaparse_time_ms=$NODE_PAPAPARSE_TIME" >> benchmark-results/performance-metrics.txt
+              if [ -n "$BUN_PAPAPARSE_TIME" ]; then
+                echo "bun_papaparse_time_ms=$BUN_PAPAPARSE_TIME" >> benchmark-results/performance-metrics.txt
+              fi
               
               echo "✅ Performance metrics extracted and saved"
             else
@@ -280,11 +313,12 @@ jobs:
 
           ## Performance Trends:
 
-          Monitor the `performance-metrics.txt` file for:
-          - Rust performance should be < 10ms
-          - Go performance should be < 25ms
-          - Python performance should be < 100ms  
-          - TypeScript performance should be < 100ms
+          Monitor the `performance-metrics.txt` file for xlarge dataset (13MB, 1000 rows):
+          - Rust performance should be < 50ms
+          - Go performance should be < 250ms
+          - Python performance should be < 600ms  
+          - Node+PapaParse performance should be < 120ms
+          - Bun+PapaParse performance should be < 100ms
 
           EOF
 
