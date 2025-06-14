@@ -428,6 +428,22 @@ mypy rotate_cli/  # Type checking
 - **Local:** Mac Mini M4 (ARM64) - macOS 15.5
 - **CI/CD:** GitHub Actions - Linux basic runner (x86_64)
 
+**Performance Environment Comparison (XLarge Dataset):**
+
+| Implementation | Local (M4) | GitHub Actions | CI Slowdown |
+| -------------- | ---------: | -------------: | ----------: |
+| 🦀 Rust        |     39.1ms |        110.8ms |        2.8× |
+| 🐹 Go          |    207.2ms |        488.1ms |        2.4× |
+| 🐍 Python      |    503.7ms |       1322.0ms |        2.6× |
+| 🟢 Node+Papa   |     94.0ms |        203.0ms |        2.2× |
+| 🔥 Bun+Papa    |     87.1ms |        218.2ms |        2.5× |
+
+_GitHub's standard runners (~2.5× slower) use older x86_64 CPUs vs Apple Silicon M4's performance cores_
+
+---
+
+Below are the detailed benchmarks for Mac Mini M4.
+
 ### 1. Micro-benchmarks (Algorithm-level performance)
 
 Detailed algorithm-level performance analysis for compiled languages:

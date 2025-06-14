@@ -153,6 +153,13 @@ jobs:
           echo "Commit: ${{ github.sha }}" >> benchmark-results/benchmark-info.txt
           echo "Ref: ${{ github.ref }}" >> benchmark-results/benchmark-info.txt
           echo "" >> benchmark-results/benchmark-info.txt
+          echo "=== System Information ===" >> benchmark-results/benchmark-info.txt
+          echo "OS: $(uname -a)" >> benchmark-results/benchmark-info.txt
+          echo "CPU Info: $(cat /proc/cpuinfo | grep 'model name' | head -1 | cut -d: -f2 | xargs)" >> benchmark-results/benchmark-info.txt
+          echo "CPU Cores: $(nproc)" >> benchmark-results/benchmark-info.txt
+          echo "RAM: $(free -h | grep 'Mem:' | awk '{print $2}') total, $(free -h | grep 'Mem:' | awk '{print $7}') available" >> benchmark-results/benchmark-info.txt
+          echo "Disk: $(df -h / | tail -1 | awk '{print $2}') total, $(df -h / | tail -1 | awk '{print $4}') available" >> benchmark-results/benchmark-info.txt
+          echo "" >> benchmark-results/benchmark-info.txt
           echo "=== Language/Runtime Versions ===" >> benchmark-results/benchmark-info.txt
           echo "Rust: $(rustc --version)" >> benchmark-results/benchmark-info.txt
           echo "Go: $(go version)" >> benchmark-results/benchmark-info.txt
@@ -231,12 +238,24 @@ jobs:
             
             # Only check regressions if we have valid data
             if [ -n "$RUST_TIME" ] && [ -n "$GO_TIME" ] && [ -n "$PYTHON_TIME" ] && [ -n "$NODE_PAPAPARSE_TIME" ]; then
-              # Updated regression thresholds for xlarge dataset (in milliseconds)
-              RUST_THRESHOLD=50.0
-              GO_THRESHOLD=250.0
-              PYTHON_THRESHOLD=600.0
-              NODE_PAPAPARSE_THRESHOLD=120.0
-              BUN_PAPAPARSE_THRESHOLD=100.0
+              # Dynamic regression thresholds based on environment
+              if [ "$GITHUB_ACTIONS" = "true" ]; then
+                # GitHub Actions environment (slower x86_64 runners)
+                echo "🔧 Using GitHub Actions regression thresholds"
+                RUST_THRESHOLD=140.0      # GitHub Actions baseline ~110ms + buffer
+                GO_THRESHOLD=600.0        # GitHub Actions baseline ~490ms + buffer  
+                PYTHON_THRESHOLD=1600.0   # GitHub Actions baseline ~1320ms + buffer
+                NODE_PAPAPARSE_THRESHOLD=250.0  # GitHub Actions baseline ~200ms + buffer
+                BUN_PAPAPARSE_THRESHOLD=270.0   # GitHub Actions baseline ~220ms + buffer
+              else
+                # Local development environment (Mac Mini M4 performance)
+                echo "🔧 Using local development regression thresholds"
+                RUST_THRESHOLD=50.0       # Local baseline ~39ms + buffer
+                GO_THRESHOLD=250.0        # Local baseline ~207ms + buffer  
+                PYTHON_THRESHOLD=600.0    # Local baseline ~504ms + buffer
+                NODE_PAPAPARSE_THRESHOLD=120.0   # Local baseline ~94ms + buffer
+                BUN_PAPAPARSE_THRESHOLD=100.0    # Local baseline ~87ms + buffer
+              fi
               
               # Check for performance regressions
               if (( $(echo "$RUST_TIME > $RUST_THRESHOLD" | bc -l) )); then
@@ -314,11 +333,14 @@ jobs:
           ## Performance Trends:
 
           Monitor the `performance-metrics.txt` file for xlarge dataset (13MB, 1000 rows):
-          - Rust performance should be < 50ms
-          - Go performance should be < 250ms
-          - Python performance should be < 600ms  
-          - Node+PapaParse performance should be < 120ms
-          - Bun+PapaParse performance should be < 100ms
+          - Rust performance should be < 140ms (GitHub Actions ~2.5× slower than Mac Mini M4)
+          - Go performance should be < 600ms
+          - Python performance should be < 1600ms  
+          - Node+PapaParse performance should be < 250ms
+          - Bun+PapaParse performance should be < 270ms
+
+          Note: GitHub Actions standard runners use older x86_64 CPUs, resulting in 
+          ~2.5× slower performance compared to local Apple Silicon M4 development.
 
           EOF
 
