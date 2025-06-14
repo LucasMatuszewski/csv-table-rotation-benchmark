@@ -46,7 +46,7 @@ Imagine coding in multiple languages at full productivity - with the flu - comfo
 - 🐹 Go 1.24.4 (darwin/arm64)
 - 🟢 Node.js 22.14.0 & 🔥 Bun 1.2.16
 - 🐍 Python 3.13.3
-- 📊 Testing: Mac Mini M4 (macOS 15.5) + GitHub Actions (Linux, basic runner)
+- 📊 Testing: Mac Mini M4 (macOS 15.5) + GitHub Actions runner (Ubuntu 24.04)
 
 **Roadmap:**
 
@@ -426,7 +426,9 @@ mypy rotate_cli/  # Type checking
 **Testing Environment:**
 
 - **Local:** Mac Mini M4 (ARM64) - macOS 15.5
-- **CI/CD:** GitHub Actions - Linux basic runner (x86_64)
+- **CI/CD:** GitHub Actions - Ubuntu 24.04.1 basic runner (x86_64)
+  - CPU: AMD EPYC 7763 64-Core Processor (4 cores allocated)
+  - RAM: 15Gi total, 14Gi available
 
 **Performance Environment Comparison (XLarge Dataset):**
 
@@ -438,7 +440,7 @@ mypy rotate_cli/  # Type checking
 | 🟢 Node+Papa   |     94.0ms |        203.0ms |        2.2× |
 | 🔥 Bun+Papa    |     87.1ms |        218.2ms |        2.5× |
 
-_GitHub's standard runners (~2.5× slower) use older x86_64 CPUs vs Apple Silicon M4's performance cores_
+_GitHub's standard runners (~2.5× slower) use AMD EPYC 7763 (4 cores) vs Apple Silicon M4's high-performance cores_
 
 ---
 

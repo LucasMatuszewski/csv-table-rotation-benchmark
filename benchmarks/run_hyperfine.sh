@@ -721,7 +721,8 @@ print_summary() {
     if [[ -n "${comprehensive_file}" && -f "${comprehensive_file}" ]]; then
         echo "🏆 Quick Results (from comprehensive comparison):"
         echo "=================================================="
-        tail -10 "${comprehensive_file}" | head -8
+        # Extract the table from the markdown file (look for the table header and all subsequent table rows)
+        grep -A 20 "| Command |" "${comprehensive_file}" | head -15
         echo
     fi
 }
