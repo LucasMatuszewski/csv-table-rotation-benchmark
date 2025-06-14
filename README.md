@@ -11,27 +11,51 @@ A high-performance CSV Table Rotation CLI tool implemented in **Rust, Go, TypeSc
 
 Imagine coding in multiple languages at full productivity - with the flu - comfortably nestled in your bed, powered by **XR Glasses**, and assisted by the latest **Claude 4 Sonnet** inside cutting-edge AI tools (see [Zed vs Cursor comparison](#-ai-tools-comparison)). This unique scenario inspired the creation of this repository. What a time to be alive!
 
-**🏆 Benchmark Results (Comprehensive Dataset):**
+**🏆 Benchmark Results:**
 
-| Language          | Small Dataset | Medium Dataset | Large Dataset | Startup Time | Performance Rank           |
-| ----------------- | ------------- | -------------- | ------------- | ------------ | -------------------------- |
-| 🦀 **Rust**       | 1.4ms         | 1.4ms          | 3.0ms         | 1.4ms        | 🥇 **1st** - Fastest       |
-| 🐹 **Go**         | 1.8ms         | 2.0ms          | 12.8ms        | 1.7ms        | 🥈 **2nd** - Excellent     |
-| 🐍 **Python**     | 17.0ms        | 17.7ms         | 35.8ms        | 16.6ms       | 🥉 **3rd** - Solid         |
-| 📜 **TypeScript** | 32.0ms        | 34.0ms         | 42.7ms        | 29.0ms       | **4th** - Node.js overhead |
+- XLarge Dataset - 13MB, 1000 rows, up to 70x70 matrices
+- Medium Dataset - 8KB, 50 rows, up to 10x10 matrices
+- Startup Time - 1 row with 1x1 matrix
 
-**Benchmark Insights:**
+| Implementation           | XLarge (vs Rust) | Medium (vs Rust) | Startup | Scaling Behavior                |
+| ------------------------ | ---------------- | ---------------- | ------- | ------------------------------- |
+| 🦀 **Rust**              | 39.1ms (1.00×)   | 1.4ms (1.00×)    | 1.3ms   | 🥇 **Excellent scaling**        |
+| 🔥 **Bun + PapaParse**   | 87.1ms (2.23×)   | 28.7ms (20.5×)   | 25.9ms  | 🥈 **Good for large files**     |
+| 🟢 **Node + PapaParse**  | 94.0ms (2.41×)   | 35.7ms (25.5×)   | 33.1ms  | 🥉 **Slowest for small files**  |
+| 🔥 **Bun + csv-stream**  | 168.0ms (4.30×)  | 27.3ms (19.5×)   | 25.9ms  | **Better for small files**      |
+| 🐹 **Go**                | 207.2ms (5.30×)  | 1.9ms (1.36×)    | 1.6ms   | **Great startup, poor scaling** |
+| 🟢 **Node + csv-stream** | 209.7ms (5.37×)  | 34.8ms (24.9×)   | 33.1ms  | **Better for small files**      |
+| 🐍 **Python**            | 503.7ms (12.89×) | 20.3ms (14.5×)   | 16.8ms  | **Consistent but slow**         |
 
-- **Rust wins overall** - Zero-cost abstractions and compiled efficiency
-- **Go excellent startup** - Only 28% slower than Rust for small tasks
-- **Python consistency** - Steady ~12× gap, efficient interpreter
-- **TypeScript struggles** - V8 startup overhead dominates small workloads
-- **Algorithm-level performance** - Go is 2.5× slower than Rust in [micro-benchmarks](#1-micro-benchmarks-algorithm-level-performance) (pure rotation)
+**Key Performance Insights:**
+
+- **🦀 Rust dominates across all scales** - Zero-cost abstractions and compiled efficiency shine consistently from small (1.4ms) to xlarge (39.1ms)
+- **🔥 Bun + PapaParse emerges as best JS solution** - 2.4× faster than Node.js + csv-stream for large files, with consistent performance
+- **📚 CSV library choice matters significantly** - PapaParse 2× faster than csv-stream for large files, but csv-stream wins for small files
+- **🐹 Go's scaling paradox** - Stunning small-file performance (1.36× vs Rust), but poor scaling (5.30× vs Rust for xlarge)
+- **🟢 Node.js startup penalty, scaling strength** - Heavy startup overhead (25× slower than Rust for medium), but excellent large-file processing (only 2.4× slower than Rust for xlarge)
+- **🐍 Python's linear consistency** - Remarkably stable 14-15× performance ratio vs Rust across all scales, but consistently slow overall
+- **⚡ Startup vs Processing trade-off revealed** - Compiled languages (Rust, Go) excel at startup, but only Rust maintains advantage at scale where CSV parsing dominates
+- **📊 JavaScript runtime evolution** - Both Node.js and Bun scale dramatically better than their startup times suggest, becoming competitive for large datasets
+- **🎯 Real-world implications** - For small/quick tasks: Go or Rust. For large CSV processing: Rust > Bun/Node.js + PapaParse > Go
+- **Algorithm-level performance** - Go is 2.3-2.6× slower than Rust in [micro-benchmarks](#1-micro-benchmarks-algorithm-level-performance) (pure rotation algorithm)
+
+**Language & Runtime Versions:**
+
+- 🦀 Rust 1.87.0
+- 🐹 Go 1.24.4 (darwin/arm64)
+- 🟢 Node.js 22.14.0 & 🔥 Bun 1.2.16
+- 🐍 Python 3.13.3
+- 📊 Testing: Mac Mini M4 (macOS 15.5) + GitHub Actions (Linux, basic runner)
 
 **Roadmap:**
 
-- [ ] Add Bun vs Deno vs Node.js benchmarks
+- [x] ~~Add Bun vs Node.js benchmarks~~ ✅ **Completed** - Bun shows 24% faster startup, significant CSV parsing advantages
+- [x] ~~Add PapaParse vs csv-stream comparison~~ ✅ **Completed** - PapaParse 2× faster for large datasets
+- [ ] Add Deno runtime benchmarks
 - [ ] Add Swift implementation and benchmarks
+- [ ] Add multi-type support (string, number, boolean)
+- [ ] Parallelize the rotation algorithm (multiple or all layers at once)
 
 ---
 
@@ -62,6 +86,8 @@ Imagine coding in multiple languages at full productivity - with the flu - comfo
   - [🏎️ Performance Benchmarks](#️-performance-benchmarks)
     - [1. Micro-benchmarks (Algorithm-level performance)](#1-micro-benchmarks-algorithm-level-performance)
     - [2. End-to-end CLI benchmarks (Hyperfine - Cross-language)](#2-end-to-end-cli-benchmarks-hyperfine---cross-language)
+    - [3. JavaScript Runtime Comparison](#3-javascript-runtime-comparison)
+    - [4. CSV Library Performance Analysis](#4-csv-library-performance-analysis)
   - [🤖 AI Tools Comparison](#-ai-tools-comparison)
     - [Tools Used](#tools-used)
       - [1. **ChatGPT App with o3** + Search + "Work with Apps" (Cursor access on macOS)](#1-chatgpt-app-with-o3--search--work-with-apps-cursor-access-on-macos)
@@ -262,6 +288,8 @@ csv-table-rotation-benchmark/
 
 ### Rust
 
+**Version:** `rustc 1.87.0` + `cargo 1.87.0`
+
 **Build & Run:**
 
 ```bash
@@ -285,6 +313,8 @@ cargo bench  # Performance benchmarks
 - Property-based testing with `proptest`
 
 ### Go
+
+**Version:** `go 1.24.4` (darwin/arm64)
 
 **Build & Run:**
 
@@ -313,6 +343,8 @@ go test -bench=BenchmarkRotationSizes ./internal/rotate # Specific benchmark
 
 ### TypeScript
 
+**Versions:** `Node.js 22.14.0` & `Bun 1.2.16`
+
 **Build & Run:**
 
 ```bash
@@ -332,11 +364,29 @@ npm lint
 **Features:**
 
 - Modern TypeScript with strict type checking
-- Streaming CSV processing
+- **Dual CSV library support** - Both csv-stream (default) and PapaParse via environment variable
+- Streaming CSV processing for memory efficiency
+- **Runtime flexibility** - Works with Node.js, and Bun
 - Jest testing with CLI integration tests
 - ESLint + Prettier for code quality
 
+**CSV Library Switching:**
+
+```bash
+# Default: csv-stream
+node dist/index.js input.csv
+
+# PapaParse (much faster for large files, a little slower for small files)
+CSV_LIBRARY=papaparse node dist/index.js input.csv
+
+# Or use wrapper scripts (created for Hyperfine to avoid Shell and ENV variables)
+./typescript/run-papaparse.sh input.csv      # Node.js + PapaParse
+./typescript/run-bun-papaparse.sh input.csv # Bun + PapaParse
+```
+
 ### Python
+
+**Version:** `Python 3.13.3`
 
 **Build & Run:**
 
@@ -373,7 +423,10 @@ mypy rotate_cli/  # Type checking
 
 ## 🏎️ Performance Benchmarks
 
-We provide two complementary types of benchmarks:
+**Testing Environment:**
+
+- **Local:** Mac Mini M4 (ARM64) - macOS 15.5
+- **CI/CD:** GitHub Actions - Linux basic runner (x86_64)
 
 ### 1. Micro-benchmarks (Algorithm-level performance)
 
@@ -464,40 +517,83 @@ pip install -e ".[dev]"
 **Sample Results (Data Size Scaling):**
 
 ```
-| Dataset | Rust  | Go     | Python | TypeScript | Rust vs Go  | Rust vs Py   | Rust vs TS   |
-|---------|-------|--------|--------|------------|-------------|--------------|--------------|
-| Small   | 1.4ms | 1.8ms  | 17.0ms | 32.0ms     | 1.3× faster | 12.3× faster | 23.3× faster |
-| Medium  | 1.4ms | 2.0ms  | 17.7ms | 34.0ms     | 1.4× faster | 12.3× faster | 23.6× faster |
-| Large   | 3.0ms | 12.8ms | 35.8ms | 42.7ms     | 4.2× faster | 11.9× faster | 14.3× faster |
+| Dataset | Rust  | Go (vs Rust)   | Python (vs Rust) | Node (vs Rust) | Bun (vs Rust)  |
+|---------|-------|----------------|------------------|----------------|----------------|
+| Small   | 1.4ms | 1.8ms (1.3x)   | 17.6ms (12.6x)   | 37.0ms (26.4x) | 30.9ms (22.1x) |
+| Medium  | 1.5ms | 1.9ms (1.3x)   | 18.0ms (12.0x)   | 37.9ms (25.3x) | 30.0ms (20.0x) |
+| Large   | 2.9ms | 11.6ms (4.0x)  | 36.9ms (12.7x)   | 41.7ms (14.4x) | 33.4ms (11.5x) |
+| XLarge  | 40.0ms| 211.9ms (5.3x) | 513.1ms (12.8x)  | 94.2ms (2.4x)  | 88.6ms (2.2x)  |
 ```
 
-**Startup Overhead Analysis:**
+> Note: for Node.js and Bun we used PapaParse CSV library
+
+**Startup Overhead Analysis (file with only ONE 1x1 matrix):**
 
 ```
-| Language   | Startup Time | vs Rust |
-|------------|--------------|---------|
-| Rust       | 1.4ms        | 1.00×   |
-| Go         | 1.7ms        | 1.28×   |
-| Python     | 16.6ms       | 11.9×   |
-| TypeScript | 29.0ms       | 20.7×   |
+| Implementation | Startup Time | vs Rust | Notes                    |
+|----------------|--------------|---------|--------------------------|
+| Rust           | 1.3ms        | 1.00×   | Compiled binary          |
+| Go             | 1.7ms        | 1.31×   | Compiled binary          |
+| Python         | 17.7ms       | 13.6×   | Interpreter + C modules  |
+| Bun            | 26.6ms       | 20.5×   | Optimized JS runtime     |
+| Node.js        | 35.0ms       | 26.9×   | V8 JIT compilation       |
 ```
 
-**Performance Ranking:**
+**Performance Ranking (XLarge Dataset):**
 
-1. **Rust** (1.4-3.0ms) - Fastest with excellent scaling; compiled efficiency and zero-cost abstractions
-2. **Go** (1.7-12.8ms) - ~1.3-4.2× slower; excellent startup time, some variance with large datasets
-3. **Python** (16.6-35.8ms) - ~12× slower; consistent performance, efficient built-in modules
-4. **TypeScript** (29.0-42.7ms) - ~14-24× slower; V8 JIT performance limited by startup overhead
+1. **🦀 Rust** (40.0ms) - Fastest with excellent scaling; compiled efficiency and zero-cost abstractions
+2. **🔥 Bun + PapaParse** (88.6ms) - Best JavaScript solution; 2.2× slower than Rust
+3. **🟢 Node.js + PapaParse** (94.2ms) - Solid JS performance; 2.4× slower than Rust
+4. **🔥 Bun + csv-stream** (172.4ms) - Shows CSV library impact; 4.3× slower than Rust
+5. **🐹 Go** (211.9ms) - Excellent startup but poor scaling; 5.3× slower than Rust
+6. **🟢 Node.js + csv-stream** (212.7ms) - Slower runtime + slower CSV lib; 5.3× slower than Rust
+7. **🐍 Python** (513.1ms) - Consistent but slower; 12.8× slower than Rust
 
 **Key Performance Insights:**
 
-- **Perfect algorithmic scaling**: Rust demonstrates O(N²) scaling (1.4ms → 3.0ms for ~25× larger matrices)
-- **Go performance characteristics**: Excellent startup time (~1.7ms), but shows more variance with large datasets (12.8ms) compared to Rust
-- **Startup overhead dominance**: Both Python (~16.6ms) and TypeScript (~29ms) have significant startup costs compared to compiled languages
-- **Python consistency**: Maintains steady ~12× performance gap across all dataset sizes, with startup being the primary bottleneck
-- **TypeScript scaling**: Shows diminishing startup penalty as datasets grow (21× slower → 13× slower), but startup overhead remains substantial
-- **Runtime characteristics**: For small workloads, startup overhead dominates; compiled languages (Rust, Go) have clear advantages. Python's interpreter is more efficient than Node.js V8 initialization
-- **Cross-language consistency**: All implementations use identical algorithm ensuring performance comparison reflects language/runtime differences, not algorithmic ones
+- **🦀 Rust's scaling excellence**: Perfect O(N²) scaling from 1.4ms (small) → 40ms (xlarge) for 1000× larger datasets
+- **🔥 JavaScript runtime evolution**: Bun consistently 19-24% faster than Node.js across all dataset sizes
+- **📚 CSV library impact**: PapaParse 2× faster than csv-stream for large files, minimal difference for small files
+- **🐹 Go's scaling challenge**: Excellent startup (1.7ms) but poor large dataset performance (5.3× slower than Rust)
+- **🐍 Python's C advantage**: Built-in CSV module's C implementation keeps Python competitive despite interpreter overhead
+- **⚡ Startup vs processing trade-off**: Compiled languages dominate startup, but CSV parsing efficiency becomes critical for large files
+- **🎯 Runtime characteristics**: For small workloads, startup overhead dominates; for large files, CSV parsing and algorithm efficiency matter most
+- **📊 Cross-language consistency**: Identical algorithm ensures performance differences reflect language/runtime characteristics, not implementation variations
+
+### 3. JavaScript Runtime Comparison
+
+**Bun vs Node.js Performance Analysis:**
+
+| Dataset Size | Bun + csv-stream | Node.js + csv-stream | Bun + PapaParse | Node.js + PapaParse |
+| ------------ | ---------------- | -------------------- | --------------- | ------------------- |
+| Small        | 26.8ms           | 35.2ms (+24%)        | 30.9ms          | 37.0ms (+16%)       |
+| Medium       | 28.4ms           | 37.0ms (+23%)        | 30.0ms          | 37.9ms (+21%)       |
+| Large        | 36.3ms           | 45.7ms (+21%)        | 33.4ms          | 41.7ms (+20%)       |
+| XLarge       | 172.4ms          | 212.7ms (+19%)       | 88.6ms          | 94.2ms (+6%)        |
+
+**Key Insights:**
+
+- **🔥 Bun consistently outperforms Node.js** by 6-24% across all dataset sizes
+- **⚡ Startup advantage diminishes with scale** - Bun's edge reduces from 24% (small) to 6% (xlarge) with PapaParse
+- **🚀 Runtime efficiency** - Bun's optimized JavaScript engine shows consistent performance gains
+- **📊 Library interaction** - Both runtimes benefit equally from better CSV libraries (PapaParse vs csv-stream)
+
+### 4. CSV Library Performance Analysis
+
+**PapaParse vs csv-stream Comparison:**
+
+| Runtime | Small Dataset    | Medium Dataset   | Large Dataset    | XLarge Dataset    | PapaParse Advantage       |
+| ------- | ---------------- | ---------------- | ---------------- | ----------------- | ------------------------- |
+| Node.js | 37.0ms vs 35.2ms | 37.9ms vs 37.0ms | 41.7ms vs 45.7ms | 94.2ms vs 212.7ms | **2.26× faster (xlarge)** |
+| Bun     | 30.9ms vs 26.8ms | 30.0ms vs 28.4ms | 33.4ms vs 36.3ms | 88.6ms vs 172.4ms | **1.95× faster (xlarge)** |
+
+**Research-Backed Analysis** ([LeanyLabs CSV Parser Benchmarks](https://leanylabs.com/blog/js-csv-parsers-benchmarks/)):
+
+- **📈 PapaParse dominates large files** - Fastest JavaScript CSV parser, even beating `String.split()` in some cases
+- **🐌 fast-csv is actually the slowest** - Despite the name, performs worst in comprehensive benchmarks
+- **📦 Small overhead for small files** - Library choice matters less for datasets under 1MB
+- **🎯 Streaming efficiency** - PapaParse's streaming implementation excels with large datasets
+- **⚖️ Bundle size trade-off** - PapaParse (6.8k gzipped) vs csv-parser (1.5k gzipped), but performance justifies the size for large CSV files
 
 ## 🤖 AI Tools Comparison
 
